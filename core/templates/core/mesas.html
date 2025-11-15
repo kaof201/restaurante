@@ -1,0 +1,194 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Mesas - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4">
+                <i class="fas fa-chair"></i> Gestión de Mesas
+            </h1>
+            <p class="lead text-muted">Estado y disponibilidad de las mesas del restaurante</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/admin/core/mesa/add/" class="btn btn-primary" target="_blank">
+                <i class="fas fa-plus"></i> Agregar Mesa
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <i class="fas fa-chair fa-3x text-primary mb-3"></i>
+                    <h3 class="text-primary">{{ total_mesas }}</h3>
+                    <p class="text-muted mb-0">Total de Mesas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h3 class="text-success">{{ disponibles }}</h3>
+                    <p class="text-muted mb-0">Mesas Disponibles</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <i class="fas fa-users fa-3x text-danger mb-3"></i>
+                    <h3 class="text-danger">{{ ocupadas }}</h3>
+                    <p class="text-muted mb-0">Mesas Ocupadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="fas fa-info-circle"></i> Leyenda de Estados:
+                    </h6>
+                    <div class="d-flex flex-wrap gap-3">
+                        <span class="badge bg-success p-2">
+                            <i class="fas fa-check"></i> Disponible - Mesa libre para usar
+                        </span>
+                        <span class="badge bg-danger p-2">
+                            <i class="fas fa-users"></i> Ocupada - Mesa en uso
+                        </span>
+                        <span class="badge bg-warning text-dark p-2">
+                            <i class="fas fa-tools"></i> Mantenimiento - Mesa no disponible
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Mesas -->
+    <div class="row g-4">
+        {% if mesas %}
+            {% for mesa in mesas %}
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="card h-100 mesa-card 
+                            {% if mesa.estado.nombre == 'Disponible' %}mesa-disponible border-success
+                            {% elif mesa.estado.nombre == 'Ocupada' %}mesa-ocupada border-danger
+                            {% else %}border-warning{% endif %}">
+                    <div class="card-body text-center">
+                        <!-- Icono de Mesa -->
+                        <div class="mb-3">
+                            <i class="fas fa-chair fa-4x 
+                                {% if mesa.estado.nombre == 'Disponible' %}text-success
+                                {% elif mesa.estado.nombre == 'Ocupada' %}text-danger
+                                {% else %}text-warning{% endif %}">
+                            </i>
+                        </div>
+
+                        <!-- Número de Mesa -->
+                        <h4 class="card-title mb-2">
+                            Mesa #{{ mesa.id }}
+                        </h4>
+
+                        <!-- Capacidad -->
+                        <p class="card-text mb-3">
+                            <i class="fas fa-users"></i> Capacidad: 
+                            <strong>{{ mesa.capacidad }} personas</strong>
+                        </p>
+
+                        <!-- Estado -->
+                        <div class="mb-3">
+                            {% if mesa.estado.nombre == 'Disponible' %}
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check-circle"></i> {{ mesa.estado.nombre }}
+                                </span>
+                            {% elif mesa.estado.nombre == 'Ocupada' %}
+                                <span class="badge bg-danger fs-6">
+                                    <i class="fas fa-user-clock"></i> {{ mesa.estado.nombre }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark fs-6">
+                                    <i class="fas fa-exclamation-triangle"></i> {{ mesa.estado.nombre }}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="d-grid gap-2">
+                            {% if mesa.estado.nombre == 'Disponible' %}
+                                <a href="{% url 'core:crear_pedido' %}?mesa={{ mesa.id }}" 
+                                   class="btn btn-success btn-sm">
+                                    <i class="fas fa-plus"></i> Asignar Pedido
+                                </a>
+                            {% elif mesa.estado.nombre == 'Ocupada' %}
+                                <button class="btn btn-outline-danger btn-sm" disabled>
+                                    <i class="fas fa-lock"></i> En Uso
+                                </button>
+                            {% endif %}
+                            
+                            <a href="/admin/core/mesa/{{ mesa.id }}/change/" 
+                               class="btn btn-outline-primary btn-sm" 
+                               target="_blank">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Footer con información adicional -->
+                    <div class="card-footer bg-light">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            {% if mesa.estado.nombre == 'Disponible' %}
+                                Lista para recibir clientes
+                            {% elif mesa.estado.nombre == 'Ocupada' %}
+                                Mesa actualmente ocupada
+                            {% else %}
+                                No disponible temporalmente
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-chair fa-5x text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">No hay mesas registradas</h4>
+                        <p class="text-muted">Comienza agregando mesas al sistema</p>
+                        <a href="/admin/core/mesa/add/" class="btn btn-primary" target="_blank">
+                            <i class="fas fa-plus"></i> Agregar Primera Mesa
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Información adicional -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5><i class="fas fa-lightbulb"></i> Consejos</h5>
+                    <ul class="mb-0">
+                        <li>Las mesas disponibles pueden asignarse directamente desde "Asignar Pedido"</li>
+                        <li>Para cambiar el estado de una mesa, usa el botón "Editar"</li>
+                        <li>La capacidad indica el número máximo de personas por mesa</li>
+                        <li>Las mesas en mantenimiento no aparecerán disponibles para pedidos</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

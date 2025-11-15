@@ -1,0 +1,306 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Crear Pedido - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">
+                <i class="fas fa-plus-circle"></i> Crear Nuevo Pedido
+            </h1>
+            <p class="lead text-muted">Completa el formulario para crear un pedido</p>
+        </div>
+    </div>
+
+    <form method="post" id="pedidoForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Formulario de Pedido -->
+            <div class="col-md-8">
+                <!-- Información del Pedido -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle"></i> Información del Pedido
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="cliente_id" class="form-label">
+                                    <i class="fas fa-user"></i> Cliente
+                                </label>
+                                <select name="cliente_id" id="cliente_id" class="form-select">
+                                    <option value="">Seleccionar cliente (opcional)</option>
+                                    {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="tipo_pedido_id" class="form-label">
+                                    <i class="fas fa-clipboard-list"></i> Tipo de Pedido *
+                                </label>
+                                <select name="tipo_pedido_id" id="tipo_pedido_id" class="form-select" required>
+                                    <option value="">Seleccionar tipo</option>
+                                    {% for tipo in tipos_pedido %}
+                                    <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="mesa_id" class="form-label">
+                                    <i class="fas fa-chair"></i> Mesa
+                                </label>
+                                <select name="mesa_id" id="mesa_id" class="form-select">
+                                    <option value="">Sin mesa asignada</option>
+                                    {% for mesa in mesas %}
+                                    <option value="{{ mesa.id }}">
+                                        Mesa {{ mesa.id }} - Capacidad: {{ mesa.capacidad }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selección de Items -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-utensils"></i> Seleccionar Items del Menú
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Filtro por Categoría -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-filter"></i> Filtrar por Categoría
+                            </label>
+                            <div class="btn-group flex-wrap" role="group">
+                                <button type="button" class="btn btn-outline-primary active" 
+                                        onclick="filtrarCategoria('todas')">
+                                    Todas
+                                </button>
+                                {% for categoria in categorias %}
+                                <button type="button" class="btn btn-outline-primary" 
+                                        onclick="filtrarCategoria('{{ categoria.id }}')">
+                                    {{ categoria.nombre }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Lista de Items -->
+                        <div class="row g-3" id="itemsContainer">
+                            {% for item in items %}
+                            <div class="col-md-6 item-card" data-categoria="{{ item.categoria.id }}">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="card-title mb-1">{{ item.nombre }}</h6>
+                                                <span class="badge bg-info mb-2">{{ item.categoria.nombre }}</span>
+                                                <p class="card-text mb-2">
+                                                    <strong class="text-primary">${{ item.precio }}</strong>
+                                                </p>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-box"></i> Stock: {{ item.stock }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <input type="number" 
+                                                       class="form-control form-control-sm item-cantidad" 
+                                                       id="cantidad_{{ item.id }}"
+                                                       data-item-id="{{ item.id }}"
+                                                       data-item-precio="{{ item.precio }}"
+                                                       data-item-nombre="{{ item.nombre }}"
+                                                       min="0" 
+                                                       max="{{ item.stock }}"
+                                                       value="0" 
+                                                       style="width: 70px;"
+                                                       placeholder="Cant.">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if not items %}
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            No hay items disponibles en el menú
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen del Pedido -->
+            <div class="col-md-4">
+                <div class="card sticky-top" style="top: 80px;">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shopping-cart"></i> Resumen del Pedido
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="resumenItems" class="mb-3">
+                            <p class="text-muted text-center">
+                                <i class="fas fa-info-circle"></i><br>
+                                Selecciona items para agregar al pedido
+                            </p>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <strong>Total:</strong>
+                            <h3 class="text-primary mb-0" id="totalPedido">$0.00</h3>
+                        </div>
+
+                        <div id="itemsInputs"></div>
+
+                        <button type="submit" class="btn btn-success w-100 btn-lg" id="btnCrearPedido" disabled>
+                            <i class="fas fa-check"></i> Crear Pedido
+                        </button>
+
+                        <a href="{% url 'core:pedidos' %}" class="btn btn-outline-secondary w-100 mt-2">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variables globales
+let itemsSeleccionados = {};
+let total = 0;
+
+// Filtrar por categoría
+function filtrarCategoria(categoriaId) {
+    const items = document.querySelectorAll('.item-card');
+    const botones = document.querySelectorAll('.btn-group button');
+    
+    // Actualizar botones activos
+    botones.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Mostrar/ocultar items
+    items.forEach(item => {
+        if (categoriaId === 'todas' || item.dataset.categoria === categoriaId) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Actualizar resumen del pedido
+function actualizarResumen() {
+    const resumenDiv = document.getElementById('resumenItems');
+    const totalDiv = document.getElementById('totalPedido');
+    const itemsInputsDiv = document.getElementById('itemsInputs');
+    const btnCrear = document.getElementById('btnCrearPedido');
+    
+    // Limpiar
+    resumenDiv.innerHTML = '';
+    itemsInputsDiv.innerHTML = '';
+    total = 0;
+    
+    const itemsArray = Object.values(itemsSeleccionados);
+    
+    if (itemsArray.length === 0) {
+        resumenDiv.innerHTML = '<p class="text-muted text-center"><i class="fas fa-info-circle"></i><br>Selecciona items para agregar al pedido</p>';
+        btnCrear.disabled = true;
+        totalDiv.textContent = '$0.00';
+        return;
+    }
+    
+    // Mostrar items seleccionados
+    itemsArray.forEach(item => {
+        const subtotal = item.precio * item.cantidad;
+        total += subtotal;
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'mb-2 pb-2 border-bottom';
+        itemDiv.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <small><strong>${item.nombre}</strong></small><br>
+                    <small class="text-muted">${item.cantidad} x $${item.precio}</small>
+                </div>
+                <div>
+                    <strong class="text-primary">$${subtotal.toFixed(2)}</strong>
+                </div>
+            </div>
+        `;
+        resumenDiv.appendChild(itemDiv);
+        
+        // Agregar inputs ocultos
+        itemsInputsDiv.innerHTML += `
+            <input type="hidden" name="items[]" value="${item.id}">
+            <input type="hidden" name="cantidades[]" value="${item.cantidad}">
+        `;
+    });
+    
+    totalDiv.textContent = `$${total.toFixed(2)}`;
+    btnCrear.disabled = false;
+}
+
+// Escuchar cambios en las cantidades
+document.addEventListener('DOMContentLoaded', function() {
+    const cantidadInputs = document.querySelectorAll('.item-cantidad');
+    
+    cantidadInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const itemId = this.dataset.itemId;
+            const cantidad = parseInt(this.value) || 0;
+            
+            if (cantidad > 0) {
+                itemsSeleccionados[itemId] = {
+                    id: itemId,
+                    nombre: this.dataset.itemNombre,
+                    precio: parseFloat(this.dataset.itemPrecio),
+                    cantidad: cantidad
+                };
+            } else {
+                delete itemsSeleccionados[itemId];
+            }
+            
+            actualizarResumen();
+        });
+    });
+});
+
+// Validación del formulario
+document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+    const tipoPedido = document.getElementById('tipo_pedido_id').value;
+    
+    if (!tipoPedido) {
+        e.preventDefault();
+        alert('Por favor selecciona el tipo de pedido');
+        return;
+    }
+    
+    if (Object.keys(itemsSeleccionados).length === 0) {
+        e.preventDefault();
+        alert('Debes agregar al menos un item al pedido');
+        return;
+    }
+});
+</script>
+{% endblock %}

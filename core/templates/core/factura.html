@@ -1,0 +1,250 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Factura #{{ pedido.id }} - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header con botones -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1 class="display-5">
+                <i class="fas fa-file-invoice"></i> Factura
+            </h1>
+        </div>
+        <div class="col-md-6 text-end">
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+            <a href="{% url 'core:pedidos' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <!-- Factura -->
+    <div class="card shadow-lg" id="factura-container">
+        <div class="card-body p-5">
+            <!-- Encabezado de la Factura -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h2 class="text-primary">
+                        <i class="fas fa-utensils"></i> RESTAURANTE PA
+                    </h2>
+                    <p class="mb-1">
+                        <i class="fas fa-map-marker-alt"></i> Dirección del Restaurante<br>
+                        <i class="fas fa-phone"></i> Teléfono: (123) 456-7890<br>
+                        <i class="fas fa-envelope"></i> Email: info@restaurante.com
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h3 class="text-muted">FACTURA</h3>
+                    <p class="mb-1">
+                        <strong>Nº:</strong> #{{ pedido.id }}<br>
+                        <strong>Fecha:</strong> {{ pedido.fecha|date:"d/m/Y H:i" }}<br>
+                        {% if factura %}
+                            <strong>Factura Nº:</strong> #{{ factura.id }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Información del Cliente y Pedido -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="text-uppercase text-muted mb-3">Información del Cliente</h6>
+                    {% if pedido.cliente %}
+                        <p class="mb-1">
+                            <strong>Cliente:</strong> {{ pedido.cliente.nombre }}<br>
+                            {% if pedido.cliente.cc %}
+                                <strong>CC:</strong> {{ pedido.cliente.cc }}<br>
+                            {% endif %}
+                            {% if pedido.cliente.telefono %}
+                                <strong>Teléfono:</strong> {{ pedido.cliente.telefono }}<br>
+                            {% endif %}
+                            {% if pedido.cliente.direccion %}
+                                <strong>Dirección:</strong> {{ pedido.cliente.direccion }}
+                            {% endif %}
+                        </p>
+                    {% else %}
+                        <p class="text-muted">Cliente no registrado</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-uppercase text-muted mb-3">Detalles del Pedido</h6>
+                    <p class="mb-1">
+                        <strong>Tipo:</strong> {{ pedido.tipo_pedido.nombre }}<br>
+                        {% if pedido.mesa %}
+                            <strong>Mesa:</strong> #{{ pedido.mesa.id }} (Capacidad: {{ pedido.mesa.capacidad }})<br>
+                        {% endif %}
+                        <strong>Estado:</strong> 
+                        <span class="badge bg-warning">{{ pedido.estado.nombre }}</span><br>
+                        {% if pedido.usuario %}
+                            <strong>Atendido por:</strong> {{ pedido.usuario.nombre }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tabla de Items -->
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-end">Precio Unit.</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                        <tr>
+                            <td>
+                                <strong>{{ detalle.item.nombre }}</strong>
+                                {% if detalle.item.descripcion %}
+                                    <br><small class="text-muted">{{ detalle.item.descripcion|truncatewords:10 }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ detalle.cantidad }}</td>
+                            <td class="text-end">${{ detalle.item.precio }}</td>
+                            <td class="text-end"><strong>${{ detalle.subtotal }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totales -->
+            <div class="row justify-content-end">
+                <div class="col-md-5">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal:</span>
+                                <strong>${{ subtotal }}</strong>
+                            </div>
+                            {% if descuento > 0 %}
+                            <div class="d-flex justify-content-between mb-2 text-success">
+                                <span>Descuento:</span>
+                                <strong>-${{ descuento }}</strong>
+                            </div>
+                            {% endif %}
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <h5>TOTAL:</h5>
+                                <h4 class="text-primary"><strong>${{ total }}</strong></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Pago -->
+            {% if factura %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle"></i> Factura Generada</h6>
+                        <p class="mb-0">
+                            Factura ID: #{{ factura.id }} | 
+                            Total Facturado: ${{ factura.total }} | 
+                            Descuento Aplicado: ${{ factura.descuento }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Información</h6>
+                        <p class="mb-0">Esta es una vista previa. La factura aún no ha sido generada oficialmente.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Métodos de Pago Disponibles -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6 class="text-uppercase text-muted mb-3">
+                        <i class="fas fa-credit-card"></i> Métodos de Pago Disponibles
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for forma in formas_pago %}
+                        <span class="badge bg-secondary p-2">
+                            <i class="fas fa-check"></i> {{ forma.nombre }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pie de Factura -->
+            <hr class="my-4">
+            <div class="text-center text-muted">
+                <p class="mb-1">
+                    <strong>¡Gracias por su preferencia!</strong>
+                </p>
+                <small>
+                    Sistema de Gestión de Restaurante | www.restaurante.com<br>
+                    Este documento es una representación impresa de una factura electrónica
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Adicionales (solo visible en pantalla) -->
+    <div class="row mt-4 no-print">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-3">Acciones Adicionales:</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/admin/core/pedido/{{ pedido.id }}/change/" 
+                           class="btn btn-outline-primary" 
+                           target="_blank">
+                            <i class="fas fa-edit"></i> Editar Pedido
+                        </a>
+                        {% if not factura %}
+                        <a href="/admin/core/factura/add/?pedido={{ pedido.id }}" 
+                           class="btn btn-outline-success" 
+                           target="_blank">
+                            <i class="fas fa-file-invoice-dollar"></i> Generar Factura Oficial
+                        </a>
+                        {% endif %}
+                        <button onclick="window.print()" class="btn btn-outline-secondary">
+                            <i class="fas fa-download"></i> Descargar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .navbar, footer {
+            display: none !important;
+        }
+        
+        #factura-container {
+            box-shadow: none !important;
+            border: 1px solid #dee2e6 !important;
+        }
+        
+        body {
+            background: white !important;
+        }
+    }
+</style>
+{% endblock %}

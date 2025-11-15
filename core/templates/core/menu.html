@@ -1,0 +1,118 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Menú - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4">
+                <i class="fas fa-book"></i> Menú del Restaurante
+            </h1>
+            <p class="lead text-muted">Nuestros productos disponibles</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'core:crear_pedido' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus-circle"></i> Crear Pedido
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros por Categoría -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-filter"></i> Filtrar por Categoría
+                    </h5>
+                    <div class="btn-group flex-wrap" role="group">
+                        <a href="{% url 'core:menu' %}" 
+                           class="btn btn-outline-primary {% if not categoria_seleccionada %}active{% endif %}">
+                            <i class="fas fa-th"></i> Todas
+                        </a>
+                        {% for categoria in categorias %}
+                        <a href="?categoria={{ categoria.id }}" 
+                           class="btn btn-outline-primary {% if categoria_seleccionada == categoria.id %}active{% endif %}">
+                            {{ categoria.nombre }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Items -->
+    <div class="row g-4">
+        {% if items %}
+            {% for item in items %}
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="card h-100 menu-item-card hover-shadow">
+                    {% if item.imagen %}
+                        <img src="{{ item.imagen }}" class="card-img-top menu-item-img" alt="{{ item.nombre }}">
+                    {% else %}
+                        <div class="card-img-top menu-item-img bg-secondary d-flex align-items-center justify-content-center">
+                            <i class="fas fa-utensils fa-3x text-white"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ item.nombre }}</h5>
+                            <span class="badge bg-info">{{ item.categoria.nombre }}</span>
+                        </div>
+                        
+                        {% if item.descripcion %}
+                        <p class="card-text text-muted small">{{ item.descripcion|truncatewords:15 }}</p>
+                        {% endif %}
+                        
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-secondary">{{ item.tipo_item.nombre }}</span>
+                                <span class="text-muted small">
+                                    <i class="fas fa-box"></i> Stock: {{ item.stock }}
+                                </span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="text-primary mb-0">${{ item.precio }}</h4>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle"></i> {{ item.estado.nombre }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h4>No hay productos disponibles</h4>
+                    <p>No se encontraron productos en esta categoría o el menú está vacío.</p>
+                    <a href="{% url 'core:menu' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Ver Todos los Productos
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Información Adicional -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="alert alert-light border">
+                <h5><i class="fas fa-info-circle"></i> Información</h5>
+                <ul class="mb-0">
+                    <li>Total de productos disponibles: <strong>{{ items|length }}</strong></li>
+                    <li>Categorías disponibles: <strong>{{ categorias|length }}</strong></li>
+                    <li>Para realizar un pedido, haga clic en "Crear Pedido"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
