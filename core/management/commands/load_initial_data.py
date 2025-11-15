@@ -1,9 +1,10 @@
 from django.core.management.base import BaseCommand
 from core.models import (
     Rol, TipoEstado, Estado, Categoria, TipoItem, 
-    Item, Mesa, TipoPedido, FormaPago
+    Item, Mesa, TipoPedido, FormaPago, Usuario, Cliente
 )
 from decimal import Decimal
+from datetime import date
 
 
 class Command(BaseCommand):
@@ -30,6 +31,8 @@ class Command(BaseCommand):
             TipoPedido.objects.all().delete()
             FormaPago.objects.all().delete()
             Rol.objects.all().delete()
+            Usuario.objects.all().delete()
+            Cliente.objects.all().delete()
             self.stdout.write(
                 self.style.SUCCESS('✅ Datos eliminados correctamente')
             )
@@ -39,10 +42,126 @@ class Command(BaseCommand):
         # ====================================================
         self.stdout.write('\n👥 Creando roles...')
         roles_data = ['Administrador', 'Mesero', 'Chef', 'Cajero']
+        roles = {}
         for rol_nombre in roles_data:
             rol, created = Rol.objects.get_or_create(nombre=rol_nombre)
+            roles[rol_nombre] = rol
             status = '✨' if created else '♻️'
             self.stdout.write(f'  {status} {rol_nombre}')
+
+        # ====================================================
+        # USUARIOS (EMPLEADOS)
+        # ====================================================
+        self.stdout.write('\n👨‍💼 Creando usuarios/empleados...')
+        usuarios_data = [
+            {
+                'nombre': 'Carlos Rodríguez',
+                'cc': '1234567890',
+                'telefono': '3001234567',
+                'email': 'carlos@restaurante.com',
+                'rol': 'Administrador',
+                'password': 'admin123',
+                'salario': Decimal('2500000.00'),
+            },
+            {
+                'nombre': 'María Gómez',
+                'cc': '9876543210',
+                'telefono': '3009876543',
+                'email': 'maria@restaurante.com',
+                'rol': 'Mesero',
+                'password': 'mesero123',
+                'salario': Decimal('1500000.00'),
+            },
+            {
+                'nombre': 'Pedro Martínez',
+                'cc': '5555555555',
+                'telefono': '3005555555',
+                'email': 'pedro@restaurante.com',
+                'rol': 'Chef',
+                'password': 'chef123',
+                'salario': Decimal('2000000.00'),
+            },
+            {
+                'nombre': 'Ana López',
+                'cc': '7777777777',
+                'telefono': '3007777777',
+                'email': 'ana@restaurante.com',
+                'rol': 'Cajero',
+                'password': 'cajero123',
+                'salario': Decimal('1600000.00'),
+            },
+        ]
+        
+        usuarios_created = 0
+        for usuario_data in usuarios_data:
+            rol_nombre = usuario_data.pop('rol')
+            usuario, created = Usuario.objects.get_or_create(
+                cc=usuario_data['cc'],
+                defaults={
+                    **usuario_data,
+                    'rol': roles[rol_nombre],
+                }
+            )
+            if created:
+                usuarios_created += 1
+                self.stdout.write(f'  ✨ {usuario.nombre} ({rol_nombre})')
+            else:
+                self.stdout.write(f'  ♻️  {usuario.nombre}')
+
+        # ====================================================
+        # CLIENTES
+        # ====================================================
+        self.stdout.write('\n👤 Creando clientes...')
+        clientes_data = [
+            {
+                'nombre': 'Juan Pérez',
+                'cc': '1111111111',
+                'telefono': '3101234567',
+                'direccion': 'Calle 123 #45-67, Bogotá',
+            },
+            {
+                'nombre': 'Laura Sánchez',
+                'cc': '2222222222',
+                'telefono': '3209876543',
+                'direccion': 'Carrera 45 #12-34, Medellín',
+            },
+            {
+                'nombre': 'Roberto García',
+                'cc': '3333333333',
+                'telefono': '3151112222',
+                'direccion': 'Avenida 80 #100-50, Cali',
+            },
+            {
+                'nombre': 'Sofia Ramírez',
+                'cc': '4444444444',
+                'telefono': '3003334444',
+                'direccion': 'Diagonal 15 #20-30, Barranquilla',
+            },
+            {
+                'nombre': 'Diego Torres',
+                'cc': '6666666666',
+                'telefono': '3186667777',
+                'direccion': 'Transversal 10 #5-25, Cartagena',
+            },
+            {
+                'nombre': 'Valentina Morales',
+                'cc': '',
+                'telefono': '3128889999',
+                'direccion': '',
+            },
+        ]
+        
+        clientes_created = 0
+        for cliente_data in clientes_data:
+            cliente, created = Cliente.objects.get_or_create(
+                telefono=cliente_data['telefono'],
+                defaults=cliente_data
+            )
+            if created:
+                clientes_created += 1
+                self.stdout.write(f'  ✨ {cliente.nombre}')
+            else:
+                self.stdout.write(f'  ♻️  {cliente.nombre}')
 
         # ====================================================
         # TIPOS DE ESTADO
@@ -249,6 +368,8 @@ class Command(BaseCommand):
         )
         self.stdout.write('📊 Resumen:')
         self.stdout.write(f'   • Roles: {len(roles_data)}')
+        self.stdout.write(f'   • Usuarios/Empleados: {usuarios_created} creados')
+        self.stdout.write(f'   • Clientes: {clientes_created} creados')
         self.stdout.write(f'   • Categorías: {len(categorias_data)}')
         self.stdout.write(f'   • Ítems del menú: {items_created} creados, {items_existed} existían')
         self.stdout.write(f'   • Mesas: {mesas_created if mesas_created > 0 else len(mesas_data)}')

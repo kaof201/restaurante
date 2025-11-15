@@ -18,8 +18,9 @@ def index(request):
         estado__nombre__in=['Pendiente', 'En Preparación']
     ).count()
     
+    # ✅ CORREGIDO: Cambiar 'Disponible' por 'Activo'
     items_disponibles = Item.objects.filter(
-        estado__nombre='Disponible'
+        estado__nombre='Activo'
     ).count()
     
     # Pedidos recientes
@@ -40,7 +41,9 @@ def index(request):
 def menu(request):
     """Mostrar el menú de items"""
     categorias = Categoria.objects.all()
-    items = Item.objects.filter(estado__nombre='Disponible').select_related(
+    
+    # ✅ CORREGIDO: Cambiar 'Disponible' por 'Activo'
+    items = Item.objects.filter(estado__nombre='Activo').select_related(
         'categoria', 'tipo_item', 'estado'
     )
     
@@ -176,10 +179,11 @@ def crear_pedido(request):
             messages.error(request, f'Error al crear pedido: {str(e)}')
     
     # GET request
+    # ✅ CORREGIDO: Cambiar 'Disponible' por 'Activo'
     context = {
         'clientes': Cliente.objects.all(),
         'mesas': Mesa.objects.filter(estado__nombre='Disponible'),
-        'items': Item.objects.filter(estado__nombre='Disponible').select_related('categoria'),
+        'items': Item.objects.filter(estado__nombre='Activo').select_related('categoria'),
         'tipos_pedido': TipoPedido.objects.all(),
         'categorias': Categoria.objects.all(),
     }

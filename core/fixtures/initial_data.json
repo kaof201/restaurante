@@ -346,5 +346,127 @@
     "fields": {
       "nombre": "Transferencia"
     }
+  },
+  {
+    "model": "core.usuario",
+    "pk": 1,
+    "fields": {
+      "nombre": "Carlos Rodríguez",
+      "cc": "1234567890",
+      "telefono": "3001234567",
+      "email": "carlos@restaurante.com",
+      "rol": 1,
+      "password": "admin123",
+      "fecha_contratacion": "2024-01-01",
+      "salario": "2500000.00"
+    }
+  },
+  {
+    "model": "core.usuario",
+    "pk": 2,
+    "fields": {
+      "nombre": "María Gómez",
+      "cc": "9876543210",
+      "telefono": "3009876543",
+      "email": "maria@restaurante.com",
+      "rol": 2,
+      "password": "mesero123",
+      "fecha_contratacion": "2024-02-15",
+      "salario": "1500000.00"
+    }
+  },
+  {
+    "model": "core.usuario",
+    "pk": 3,
+    "fields": {
+      "nombre": "Pedro Martínez",
+      "cc": "5555555555",
+      "telefono": "3005555555",
+      "email": "pedro@restaurante.com",
+      "rol": 3,
+      "password": "chef123",
+      "fecha_contratacion": "2024-01-20",
+      "salario": "2000000.00"
+    }
+  },
+  {
+    "model": "core.usuario",
+    "pk": 4,
+    "fields": {
+      "nombre": "Ana López",
+      "cc": "7777777777",
+      "telefono": "3007777777",
+      "email": "ana@restaurante.com",
+      "rol": 4,
+      "password": "cajero123",
+      "fecha_contratacion": "2024-03-01",
+      "salario": "1600000.00"
+    }
+  },
+  {
+    "model": "core.cliente",
+    "pk": 1,
+    "fields": {
+      "nombre": "Juan Pérez",
+      "cc": "1111111111",
+      "telefono": "3101234567",
+      "direccion": "Calle 123 #45-67, Bogotá",
+      "fecha_registro": "2024-01-15"
+    }
+  },
+  {
+    "model": "core.cliente",
+    "pk": 2,
+    "fields": {
+      "nombre": "Laura Sánchez",
+      "cc": "2222222222",
+      "telefono": "3209876543",
+      "direccion": "Carrera 45 #12-34, Medellín",
+      "fecha_registro": "2024-02-20"
+    }
+  },
+  {
+    "model": "core.cliente",
+    "pk": 3,
+    "fields": {
+      "nombre": "Roberto García",
+      "cc": "3333333333",
+      "telefono": "3151112222",
+      "direccion": "Avenida 80 #100-50, Cali",
+      "fecha_registro": "2024-03-10"
+    }
+  },
+  {
+    "model": "core.cliente",
+    "pk": 4,
+    "fields": {
+      "nombre": "Sofia Ramírez",
+      "cc": "4444444444",
+      "telefono": "3003334444",
+      "direccion": "Diagonal 15 #20-30, Barranquilla",
+      "fecha_registro": "2024-04-05"
+    }
+  },
+  {
+    "model": "core.cliente",
+    "pk": 5,
+    "fields": {
+      "nombre": "Diego Torres",
+      "cc": "6666666666",
+      "telefono": "3186667777",
+      "direccion": "Transversal 10 #5-25, Cartagena",
+      "fecha_registro": "2024-05-12"
+    }
+  },
+  {
+    "model": "core.cliente",
+    "pk": 6,
+    "fields": {
+      "nombre": "Valentina Morales",
+      "cc": "",
+      "telefono": "3128889999",
+      "direccion": "",
+      "fecha_registro": "2024-06-18"
+    }
   }
 ]
