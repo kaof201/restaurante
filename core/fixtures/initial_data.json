@@ -1,0 +1,350 @@
+[
+  {
+    "model": "core.rol",
+    "pk": 1,
+    "fields": {
+      "nombre": "Administrador"
+    }
+  },
+  {
+    "model": "core.rol",
+    "pk": 2,
+    "fields": {
+      "nombre": "Mesero"
+    }
+  },
+  {
+    "model": "core.rol",
+    "pk": 3,
+    "fields": {
+      "nombre": "Chef"
+    }
+  },
+  {
+    "model": "core.rol",
+    "pk": 4,
+    "fields": {
+      "nombre": "Cajero"
+    }
+  },
+  {
+    "model": "core.tipoestado",
+    "pk": 1,
+    "fields": {
+      "nombre": "Mesa"
+    }
+  },
+  {
+    "model": "core.tipoestado",
+    "pk": 2,
+    "fields": {
+      "nombre": "Pedido"
+    }
+  },
+  {
+    "model": "core.tipoestado",
+    "pk": 3,
+    "fields": {
+      "nombre": "Item"
+    }
+  },
+  {
+    "model": "core.estado",
+    "pk": 1,
+    "fields": {
+      "nombre": "Disponible",
+      "tipo_estado": 1
+    }
+  },
+  {
+    "model": "core.estado",
+    "pk": 2,
+    "fields": {
+      "nombre": "Ocupada",
+      "tipo_estado": 1
+    }
+  },
+  {
+    "model": "core.estado",
+    "pk": 3,
+    "fields": {
+      "nombre": "Pendiente",
+      "tipo_estado": 2
+    }
+  },
+  {
+    "model": "core.estado",
+    "pk": 4,
+    "fields": {
+      "nombre": "En preparación",
+      "tipo_estado": 2
+    }
+  },
+  {
+    "model": "core.estado",
+    "pk": 5,
+    "fields": {
+      "nombre": "Entregado",
+      "tipo_estado": 2
+    }
+  },
+  {
+    "model": "core.estado",
+    "pk": 6,
+    "fields": {
+      "nombre": "Activo",
+      "tipo_estado": 3
+    }
+  },
+  {
+    "model": "core.categoria",
+    "pk": 1,
+    "fields": {
+      "nombre": "Bebidas"
+    }
+  },
+  {
+    "model": "core.categoria",
+    "pk": 2,
+    "fields": {
+      "nombre": "Platos Fuertes"
+    }
+  },
+  {
+    "model": "core.categoria",
+    "pk": 3,
+    "fields": {
+      "nombre": "Entradas"
+    }
+  },
+  {
+    "model": "core.categoria",
+    "pk": 4,
+    "fields": {
+      "nombre": "Postres"
+    }
+  },
+  {
+    "model": "core.tipoitem",
+    "pk": 1,
+    "fields": {
+      "nombre": "Comida"
+    }
+  },
+  {
+    "model": "core.tipoitem",
+    "pk": 2,
+    "fields": {
+      "nombre": "Bebida"
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 1,
+    "fields": {
+      "nombre": "Coca Cola",
+      "descripcion": "Bebida gaseosa 350ml",
+      "precio": "2.50",
+      "costo": "1.00",
+      "stock": 100,
+      "imagen": "bebidas/coca-cola.jpg",
+      "categoria": 1,
+      "estado": 6,
+      "tipo_item": 2
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 2,
+    "fields": {
+      "nombre": "Jugo Natural de Naranja",
+      "descripcion": "Jugo de naranja natural 500ml",
+      "precio": "3.50",
+      "costo": "1.50",
+      "stock": 50,
+      "imagen": "bebidas/jugo-naranja.jpg",
+      "categoria": 1,
+      "estado": 6,
+      "tipo_item": 2
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 3,
+    "fields": {
+      "nombre": "Bandeja Paisa",
+      "descripcion": "Plato típico colombiano con carne, chicharrón, arroz, frijoles, huevo, aguacate y plátano",
+      "precio": "18.00",
+      "costo": "8.00",
+      "stock": 30,
+      "imagen": "platos/bandeja-paisa.jpg",
+      "categoria": 2,
+      "estado": 6,
+      "tipo_item": 1
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 4,
+    "fields": {
+      "nombre": "Ajiaco Santafereño",
+      "descripcion": "Sopa típica con pollo, tres tipos de papa, mazorca y alcaparras",
+      "precio": "12.00",
+      "costo": "5.00",
+      "stock": 25,
+      "imagen": "platos/ajiaco.jpg",
+      "categoria": 2,
+      "estado": 6,
+      "tipo_item": 1
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 5,
+    "fields": {
+      "nombre": "Empanadas de Carne",
+      "descripcion": "3 unidades de empanadas colombianas con carne",
+      "precio": "4.50",
+      "costo": "2.00",
+      "stock": 60,
+      "imagen": "entradas/empanadas.jpg",
+      "categoria": 3,
+      "estado": 6,
+      "tipo_item": 1
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 6,
+    "fields": {
+      "nombre": "Patacones con Hogao",
+      "descripcion": "Plátano verde frito con hogao",
+      "precio": "5.00",
+      "costo": "2.50",
+      "stock": 40,
+      "imagen": "entradas/patacones.jpg",
+      "categoria": 3,
+      "estado": 6,
+      "tipo_item": 1
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 7,
+    "fields": {
+      "nombre": "Tres Leches",
+      "descripcion": "Pastel de tres leches tradicional",
+      "precio": "5.50",
+      "costo": "2.00",
+      "stock": 20,
+      "imagen": "postres/tres-leches.jpg",
+      "categoria": 4,
+      "estado": 6,
+      "tipo_item": 1
+    }
+  },
+  {
+    "model": "core.item",
+    "pk": 8,
+    "fields": {
+      "nombre": "Flan de Caramelo",
+      "descripcion": "Flan casero con caramelo",
+      "precio": "4.00",
+      "costo": "1.50",
+      "stock": 25,
+      "imagen": "postres/flan.jpg",
+      "categoria": 4,
+      "estado": 6,
+      "tipo_item": 1
+    }
+  },
+  {
+    "model": "core.mesa",
+    "pk": 1,
+    "fields": {
+      "capacidad": 4,
+      "estado": 1
+    }
+  },
+  {
+    "model": "core.mesa",
+    "pk": 2,
+    "fields": {
+      "capacidad": 2,
+      "estado": 1
+    }
+  },
+  {
+    "model": "core.mesa",
+    "pk": 3,
+    "fields": {
+      "capacidad": 6,
+      "estado": 1
+    }
+  },
+  {
+    "model": "core.mesa",
+    "pk": 4,
+    "fields": {
+      "capacidad": 4,
+      "estado": 1
+    }
+  },
+  {
+    "model": "core.mesa",
+    "pk": 5,
+    "fields": {
+      "capacidad": 8,
+      "estado": 1
+    }
+  },
+  {
+    "model": "core.tipopedido",
+    "pk": 1,
+    "fields": {
+      "nombre": "Para Mesa"
+    }
+  },
+  {
+    "model": "core.tipopedido",
+    "pk": 2,
+    "fields": {
+      "nombre": "Para Llevar"
+    }
+  },
+  {
+    "model": "core.tipopedido",
+    "pk": 3,
+    "fields": {
+      "nombre": "Domicilio"
+    }
+  },
+  {
+    "model": "core.formapago",
+    "pk": 1,
+    "fields": {
+      "nombre": "Efectivo"
+    }
+  },
+  {
+    "model": "core.formapago",
+    "pk": 2,
+    "fields": {
+      "nombre": "Tarjeta de Crédito"
+    }
+  },
+  {
+    "model": "core.formapago",
+    "pk": 3,
+    "fields": {
+      "nombre": "Tarjeta de Débito"
+    }
+  },
+  {
+    "model": "core.formapago",
+    "pk": 4,
+    "fields": {
+      "nombre": "Transferencia"
+    }
+  }
+]
