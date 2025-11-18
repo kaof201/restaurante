@@ -29,10 +29,11 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    {% if request.session.usuario_id %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" 
-                           href="{% url 'core:index' %}">
-                            <i class="fas fa-home"></i> Inicio
+                        <a class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'core:dashboard' %}">
+                            <i class="fas fa-home"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
@@ -41,23 +42,46 @@
                             <i class="fas fa-book"></i> Menú
                         </a>
                     </li>
+                    {% if request.session.usuario_rol in 'Administrador,Mesero,Cajero' %}
                     <li class="nav-item">
                         <a class="nav-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" 
                            href="{% url 'core:pedidos' %}">
                             <i class="fas fa-clipboard-list"></i> Pedidos
                         </a>
                     </li>
+                    {% endif %}
+                    {% if request.session.usuario_rol in 'Administrador,Mesero' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'mesas' %}active{% endif %}" 
                            href="{% url 'core:mesas' %}">
                             <i class="fas fa-chair"></i> Mesas
                         </a>
                     </li>
+                    {% endif %}
+                    {% if request.session.usuario_rol == 'Administrador' %}
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/" target="_blank">
                             <i class="fas fa-cog"></i> Admin
                         </a>
                     </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> {{ request.session.usuario_nombre }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-id-badge"></i> {{ request.session.usuario_rol }}</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'core:logout' %}"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:login' %}">
+                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

@@ -1,0 +1,269 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Dashboard Mesero - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4">
+                <i class="fas fa-user-tie"></i> Panel de Mesero
+            </h1>
+            <p class="lead text-muted">Bienvenido {{ request.usuario.nombre }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'core:crear_pedido' %}" class="btn btn-success btn-lg">
+                <i class="fas fa-plus-circle"></i> Nuevo Pedido
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card dashboard-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Mesas Disponibles</h6>
+                            <h2 class="card-title mb-0">{{ total_mesas_disponibles }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-chair"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-check-circle"></i> Listas para asignar
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card dashboard-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Mis Pedidos Activos</h6>
+                            <h2 class="card-title mb-0">{{ total_mis_pedidos }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-user"></i> Pedidos a mi cargo
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card dashboard-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Mesas Ocupadas</h6>
+                            <h2 class="card-title mb-0">{{ mesas_ocupadas.count }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-user-clock"></i> En servicio
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Mesas Disponibles -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chair"></i> Mesas Disponibles
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% if mesas_disponibles %}
+                        <div class="row g-3">
+                            {% for mesa in mesas_disponibles %}
+                            <div class="col-md-12">
+                                <div class="card border-success">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-chair fa-3x text-success mb-2"></i>
+                                        <h5>Mesa #{{ mesa.id }}</h5>
+                                        <p class="mb-2">
+                                            <i class="fas fa-users"></i> 
+                                            Capacidad: {{ mesa.capacidad }} personas
+                                        </p>
+                                        <a href="{% url 'core:crear_pedido' %}?mesa={{ mesa.id }}" 
+                                           class="btn btn-success btn-sm w-100">
+                                            <i class="fas fa-plus"></i> Asignar Pedido
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-info-circle fa-3x mb-3"></i>
+                            <p>No hay mesas disponibles</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Mis Pedidos Activos -->
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list"></i> Mis Pedidos Activos
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% if mis_pedidos %}
+                        {% for pedido in mis_pedidos %}
+                        <div class="card mb-3 border-warning">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="card-title">
+                                            <i class="fas fa-receipt"></i> Pedido #{{ pedido.id }}
+                                        </h5>
+                                        <p class="mb-1">
+                                            {% if pedido.cliente %}
+                                                <i class="fas fa-user"></i> Cliente: {{ pedido.cliente.nombre }}
+                                            {% else %}
+                                                <i class="fas fa-user-slash"></i> Sin cliente
+                                            {% endif %}
+                                        </p>
+                                        <p class="mb-1">
+                                            {% if pedido.mesa %}
+                                                <i class="fas fa-chair"></i> Mesa {{ pedido.mesa.id }}
+                                            {% else %}
+                                                <i class="fas fa-shopping-bag"></i> {{ pedido.tipo_pedido.nombre }}
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ pedido.fecha|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-{{ pedido.estado.nombre|lower|cut:' ' }} fs-6">
+                                            {{ pedido.estado.nombre }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6>Items del Pedido:</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for detalle in pedido.detallepedido_set.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ detalle.item.nombre }}
+                                        <div>
+                                            <span class="badge bg-primary rounded-pill me-2">{{ detalle.cantidad }}</span>
+                                            <strong>${{ detalle.subtotal }}</strong>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>Total:</strong>
+                                    <h5 class="text-primary mb-0">
+                                        ${% widthratio pedido.detallepedido_set.all|length 1 1 %}
+                                    </h5>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{% url 'core:generar_factura' pedido.id %}" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="fas fa-file-invoice"></i> Ver Factura
+                                    </a>
+                                    <a href="/admin/core/pedido/{{ pedido.id }}/change/" 
+                                       class="btn btn-outline-secondary btn-sm"
+                                       target="_blank">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-4x mb-3"></i>
+                            <h4>No tienes pedidos activos</h4>
+                            <p>Crea un nuevo pedido para comenzar</p>
+                            <a href="{% url 'core:crear_pedido' %}" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Crear Pedido
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="row">
+        <div class="col-12 mb-3">
+            <h4><i class="fas fa-bolt"></i> Accesos Rápidos</h4>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-plus-circle fa-3x text-success mb-3"></i>
+                    <h5>Nuevo Pedido</h5>
+                    <a href="{% url 'core:crear_pedido' %}" class="btn btn-success">
+                        Crear
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-list fa-3x text-primary mb-3"></i>
+                    <h5>Todos los Pedidos</h5>
+                    <a href="{% url 'core:pedidos' %}" class="btn btn-primary">
+                        Ver Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-chair fa-3x text-info mb-3"></i>
+                    <h5>Gestionar Mesas</h5>
+                    <a href="{% url 'core:mesas' %}" class="btn btn-info text-white">
+                        Ver Mesas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x text-warning mb-3"></i>
+                    <h5>Ver Menú</h5>
+                    <a href="{% url 'core:menu' %}" class="btn btn-warning">
+                        Consultar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

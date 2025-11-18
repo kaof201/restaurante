@@ -1,0 +1,287 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Dashboard Administrador - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4">
+                <i class="fas fa-chart-line"></i> Panel de Administración
+            </h1>
+            <p class="lead text-muted">Bienvenido {{ request.usuario.nombre }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'core:logout' %}" class="btn btn-outline-danger">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas Principales -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Ingresos Hoy</h6>
+                            <h2 class="card-title mb-0">${{ ingresos_hoy }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-arrow-up"></i> Total facturado
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Pedidos Activos</h6>
+                            <h2 class="card-title mb-0">{{ pedidos_activos }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-sync-alt"></i> En proceso
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Total Clientes</h6>
+                            <h2 class="card-title mb-0">{{ total_clientes }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-user-plus"></i> Registrados
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Empleados</h6>
+                            <h2 class="card-title mb-0">{{ total_empleados }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-briefcase"></i> Personal activo
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Secundarias -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chair fa-2x text-primary mb-2"></i>
+                    <h4>{{ total_mesas }}</h4>
+                    <p class="text-muted mb-0">Total Mesas</p>
+                    <small class="text-success">{{ mesas_disponibles }} disponibles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-utensils fa-2x text-success mb-2"></i>
+                    <h4>{{ items_disponibles }}</h4>
+                    <p class="text-muted mb-0">Items en Menú</p>
+                    <small class="text-success">Disponibles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-receipt fa-2x text-warning mb-2"></i>
+                    <h4>{{ total_pedidos }}</h4>
+                    <p class="text-muted mb-0">Total Pedidos</p>
+                    <small class="text-info">Histórico</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                    <h4>100%</h4>
+                    <p class="text-muted mb-0">Operatividad</p>
+                    <small class="text-success">Sistema activo</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <h4><i class="fas fa-bolt"></i> Accesos Rápidos</h4>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-clipboard-list fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Gestionar Pedidos</h5>
+                    <p class="card-text text-muted small">Ver y administrar todos los pedidos</p>
+                    <a href="{% url 'core:pedidos' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-right"></i> Ir a Pedidos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Ver Menú</h5>
+                    <p class="card-text text-muted small">Consultar el catálogo de productos</p>
+                    <a href="{% url 'core:menu' %}" class="btn btn-success">
+                        <i class="fas fa-arrow-right"></i> Ver Menú
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-chair fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Estado de Mesas</h5>
+                    <p class="card-text text-muted small">Ver disponibilidad de mesas</p>
+                    <a href="{% url 'core:mesas' %}" class="btn btn-info text-white">
+                        <i class="fas fa-arrow-right"></i> Ver Mesas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-cog fa-3x text-secondary mb-3"></i>
+                    <h5 class="card-title">Panel Admin</h5>
+                    <p class="card-text text-muted small">Configuración del sistema</p>
+                    <a href="/admin/" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Abrir Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pedidos Recientes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Pedidos Recientes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if pedidos_recientes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Cliente</th>
+                                        <th>Mesa</th>
+                                        <th>Estado</th>
+                                        <th>Tipo</th>
+                                        <th>Fecha</th>
+                                        <th>Usuario</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pedido in pedidos_recientes %}
+                                    <tr>
+                                        <td><strong>#{{ pedido.id }}</strong></td>
+                                        <td>
+                                            {% if pedido.cliente %}
+                                                <i class="fas fa-user"></i> {{ pedido.cliente.nombre }}
+                                            {% else %}
+                                                <span class="text-muted">Sin cliente</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if pedido.mesa %}
+                                                <i class="fas fa-chair"></i> Mesa {{ pedido.mesa.id }}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning">
+                                                {{ pedido.estado.nombre }}
+                                            </span>
+                                        </td>
+                                        <td>{{ pedido.tipo_pedido.nombre }}</td>
+                                        <td>{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            {% if pedido.usuario %}
+                                                {{ pedido.usuario.nombre }}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'core:generar_factura' pedido.id %}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="Ver Factura">
+                                                <i class="fas fa-file-invoice"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No hay pedidos recientes</p>
+                            <a href="{% url 'core:crear_pedido' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Crear Primer Pedido
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

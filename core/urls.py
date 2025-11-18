@@ -4,7 +4,18 @@ from . import views
 app_name = 'core'
 
 urlpatterns = [
+    # Autenticación
     path('', views.index, name='index'),
+    path('login/', views.login, name='login'),
+    path('logout/', views.logout, name='logout'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    
+    # Dashboards por Rol
+    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('mesero/dashboard/', views.mesero_dashboard, name='mesero_dashboard'),
+    path('cajero/dashboard/', views.cajero_dashboard, name='cajero_dashboard'),
+    
+    # Vistas compartidas
     path('menu/', views.menu, name='menu'),
     path('pedidos/', views.pedidos, name='pedidos'),
     path('pedido/crear/', views.crear_pedido, name='crear_pedido'),

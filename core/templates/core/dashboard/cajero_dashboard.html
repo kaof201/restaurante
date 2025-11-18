@@ -1,0 +1,315 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Dashboard Cajero - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4">
+                <i class="fas fa-cash-register"></i> Panel de Caja
+            </h1>
+            <p class="lead text-muted">Bienvenido {{ request.usuario.nombre }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'core:logout' %}" class="btn btn-outline-danger">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas de Caja -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Total Recaudado Hoy</h6>
+                            <h2 class="card-title mb-0">${{ total_recaudado }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-chart-line"></i> Ingresos del día
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Facturas Hoy</h6>
+                            <h2 class="card-title mb-0">{{ total_facturas_hoy }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-calendar-day"></i> Generadas
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Pendientes Facturar</h6>
+                            <h2 class="card-title mb-0">{{ pedidos_sin_factura.count }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-clock"></i> Por procesar
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card dashboard-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Pedidos Listos</h6>
+                            <h2 class="card-title mb-0">{{ pedidos_listos.count }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-utensils"></i> Para entregar
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pedidos Sin Facturar -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-invoice"></i> Pedidos Pendientes de Facturar
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    {% if pedidos_sin_factura %}
+                        {% for pedido in pedidos_sin_factura %}
+                        <div class="card mb-3 border-warning">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="card-title">
+                                            <i class="fas fa-receipt"></i> Pedido #{{ pedido.id }}
+                                        </h5>
+                                        <p class="mb-1">
+                                            {% if pedido.cliente %}
+                                                <i class="fas fa-user"></i> {{ pedido.cliente.nombre }}
+                                            {% else %}
+                                                <i class="fas fa-user-slash"></i> Sin cliente
+                                            {% endif %}
+                                        </p>
+                                        <p class="mb-1">
+                                            {% if pedido.mesa %}
+                                                <i class="fas fa-chair"></i> Mesa {{ pedido.mesa.id }}
+                                            {% else %}
+                                                {{ pedido.tipo_pedido.nombre }}
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ pedido.fecha|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'core:generar_factura' pedido.id %}" 
+                                           class="btn btn-warning btn-sm">
+                                            <i class="fas fa-file-invoice-dollar"></i> Facturar
+                                        </a>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6>Items:</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for detalle in pedido.detallepedido_set.all %}
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ detalle.item.nombre }} x{{ detalle.cantidad }}</span>
+                                        <strong>${{ detalle.subtotal }}</strong>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-check-circle fa-4x mb-3 text-success"></i>
+                            <p>No hay pedidos pendientes de facturar</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Facturas del Día -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-invoice-dollar"></i> Facturas de Hoy
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    {% if facturas_hoy %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-success">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Cliente</th>
+                                        <th>Pedido</th>
+                                        <th>Hora</th>
+                                        <th class="text-end">Total</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for factura in facturas_hoy %}
+                                    <tr>
+                                        <td><strong>#{{ factura.id }}</strong></td>
+                                        <td>
+                                            <small>{{ factura.cliente.nombre|truncatewords:2 }}</small>
+                                        </td>
+                                        <td>
+                                            {% if factura.pedido %}
+                                                #{{ factura.pedido.id }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ factura.fecha|time:"H:i" }}</small>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-success">${{ factura.total }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if factura.pedido %}
+                                            <a href="{% url 'core:generar_factura' factura.pedido.id %}" 
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Ver Factura">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-success">
+                                    <tr>
+                                        <th colspan="4" class="text-end">TOTAL RECAUDADO:</th>
+                                        <th class="text-end">
+                                            <h5 class="mb-0 text-success">${{ total_recaudado }}</h5>
+                                        </th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-info-circle fa-4x mb-3"></i>
+                            <p>No hay facturas generadas hoy</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formas de Pago Aceptadas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-credit-card"></i> Formas de Pago Disponibles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for forma in formas_pago %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card text-center h-100 border-info">
+                                <div class="card-body">
+                                    <i class="fas fa-{% if 'Efectivo' in forma.nombre %}money-bill-wave{% elif 'Tarjeta' in forma.nombre %}credit-card{% elif 'Transferencia' in forma.nombre %}exchange-alt{% else %}wallet{% endif %} fa-3x text-info mb-3"></i>
+                                    <h5>{{ forma.nombre }}</h5>
+                                    <span class="badge bg-success">Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="row mt-4">
+        <div class="col-12 mb-3">
+            <h4><i class="fas fa-bolt"></i> Accesos Rápidos</h4>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-list fa-3x text-primary mb-3"></i>
+                    <h5>Ver Todos los Pedidos</h5>
+                    <a href="{% url 'core:pedidos' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-right"></i> Ver Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-cog fa-3x text-secondary mb-3"></i>
+                    <h5>Administrar Facturas</h5>
+                    <a href="/admin/core/factura/" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Ir al Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x text-warning mb-3"></i>
+                    <h5>Consultar Menú</h5>
+                    <a href="{% url 'core:menu' %}" class="btn btn-warning">
+                        <i class="fas fa-arrow-right"></i> Ver Menú
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
