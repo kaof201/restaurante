@@ -31,28 +31,28 @@
                 <ul class="navbar-nav ms-auto">
                     {% if request.session.usuario_id %}
                     <li class="nav-item">
-                        <a class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}" 
+                        <a class="nav-link {% if 'dashboard' in request.path %}active{% endif %}" 
                            href="{% url 'core:dashboard' %}">
                             <i class="fas fa-home"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'menu' %}active{% endif %}" 
+                        <a class="nav-link {% if 'menu' in request.path %}active{% endif %}" 
                            href="{% url 'core:menu' %}">
                             <i class="fas fa-book"></i> Menú
                         </a>
                     </li>
-                    {% if request.session.usuario_rol in 'Administrador,Mesero,Cajero' %}
+                    {% if request.session.usuario_rol == 'Administrador' or request.session.usuario_rol == 'Mesero' or request.session.usuario_rol == 'Cajero' %}
                     <li class="nav-item">
-                        <a class="nav-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" 
+                        <a class="nav-link {% if 'pedido' in request.path %}active{% endif %}" 
                            href="{% url 'core:pedidos' %}">
                             <i class="fas fa-clipboard-list"></i> Pedidos
                         </a>
                     </li>
                     {% endif %}
-                    {% if request.session.usuario_rol in 'Administrador,Mesero' %}
+                    {% if request.session.usuario_rol == 'Administrador' or request.session.usuario_rol == 'Mesero' %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'mesas' %}active{% endif %}" 
+                        <a class="nav-link {% if 'mesas' in request.path %}active{% endif %}" 
                            href="{% url 'core:mesas' %}">
                             <i class="fas fa-chair"></i> Mesas
                         </a>
@@ -110,7 +110,7 @@
             <p class="mb-0">
                 <i class="fas fa-utensils"></i> Sistema de Gestión de Restaurante &copy; 2024
             </p>
-            <small>Desarrollado con Django 5.2.7</small>
+            <small>Desarrollado con Django 5.2.8</small>
         </div>
     </footer>
 

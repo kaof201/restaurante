@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Chef - Restaurante{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4">
+                <i class="fas fa-hat-chef"></i> Panel de Cocina
+            </h1>
+            <p class="lead text-muted">Bienvenido {{ request.session.usuario_nombre }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'core:logout' %}" class="btn btn-outline-danger">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas de Cocina -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card dashboard-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Pedidos Pendientes</h6>
+                            <h2 class="card-title mb-0">{{ total_pendientes }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-fire"></i> Por preparar
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card dashboard-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">En Preparación</h6>
+                            <h2 class="card-title mb-0">{{ total_en_preparacion }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-hourglass-half"></i> En cocina
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card dashboard-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-white-50">Stock Bajo</h6>
+                            <h2 class="card-title mb-0">{{ items_stock_bajo.count }}</h2>
+                        </div>
+                        <div class="fs-1">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <small class="text-white-50">
+                        <i class="fas fa-box"></i> Reabastecer pronto
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pedidos Pendientes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-fire"></i> Pedidos Pendientes de Preparar
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% if pedidos_pendientes %}
+                        {% for pedido in pedidos_pendientes %}
+                        <div class="card mb-3 border-warning">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="card-title">
+                                            <i class="fas fa-receipt"></i> Pedido #{{ pedido.id }}
+                                        </h5>
+                                        <p class="mb-1">
+                                            {% if pedido.mesa %}
+                                                <i class="fas fa-chair"></i> Mesa {{ pedido.mesa.id }}
+                                            {% else %}
+                                                <i class="fas fa-shopping-bag"></i> {{ pedido.tipo_pedido.nombre }}
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ pedido.fecha|date:"H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-warning fs-6">PENDIENTE</span>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6><i class="fas fa-utensils"></i> Items a preparar:</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for detalle in pedido.detallepedido_set.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ detalle.item.nombre }}</strong>
+                                            {% if detalle.item.descripcion %}
+                                                <br><small class="text-muted">{{ detalle.item.descripcion|truncatewords:8 }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill">x{{ detalle.cantidad }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="mt-3">
+                                    <form method="post" action="{% url 'core:cambiar_estado_chef' pedido.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="nuevo_estado" value="En preparación">
+                                        <button type="submit" class="btn btn-warning btn-sm w-100">
+                                            <i class="fas fa-hand-sparkles"></i> Marcar En Preparación
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-check-circle fa-4x mb-3 text-success"></i>
+                            <h4>No hay pedidos pendientes</h4>
+                            <p>Todos los pedidos están en preparación o completados</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pedidos En Preparación -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-utensils"></i> Pedidos En Preparación
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% if pedidos_en_preparacion %}
+                        {% for pedido in pedidos_en_preparacion %}
+                        <div class="card mb-3 border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="card-title">
+                                            <i class="fas fa-receipt"></i> Pedido #{{ pedido.id }}
+                                        </h5>
+                                        <p class="mb-1">
+                                            {% if pedido.mesa %}
+                                                <i class="fas fa-chair"></i> Mesa {{ pedido.mesa.id }}
+                                            {% else %}
+                                                <i class="fas fa-shopping-bag"></i> {{ pedido.tipo_pedido.nombre }}
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ pedido.fecha|date:"H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-primary fs-6">COCINANDO</span>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6><i class="fas fa-fire"></i> En cocina:</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for detalle in pedido.detallepedido_set.all %}
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ detalle.item.nombre }}</span>
+                                        <span class="badge bg-dark">x{{ detalle.cantidad }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="mt-3">
+                                    <a href="/admin/core/pedido/{{ pedido.id }}/change/" 
+                                       class="btn btn-success btn-sm w-100"
+                                       target="_blank">
+                                        <i class="fas fa-check"></i> Marcar Como Listo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-info-circle fa-4x mb-3"></i>
+                            <h4>No hay pedidos en preparación</h4>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Más Pedidos y Stock Bajo -->
+    <div class="row">
+        <!-- Items Más Pedidos Hoy -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star"></i> Items Más Pedidos Hoy
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if items_del_dia %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th class="text-end">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items_del_dia %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-utensils text-success"></i>
+                                            {{ item.item__nombre }}
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge bg-success">{{ item.cantidad_total }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted">No hay datos del día</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Items con Stock Bajo -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Items con Stock Bajo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if items_stock_bajo %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th class="text-end">Stock</th>
+                                        <th class="text-end">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items_stock_bajo %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-box text-danger"></i>
+                                            {{ item.nombre }}
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge bg-danger">{{ item.stock }} unidades</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="/admin/core/item/{{ item.id }}/change/" 
+                                               class="btn btn-sm btn-outline-primary"
+                                               target="_blank">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-success py-4">
+                            <i class="fas fa-check-circle fa-3x mb-2"></i>
+                            <p>Todo el stock está en niveles óptimos</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="row">
+        <div class="col-12 mb-3">
+            <h4><i class="fas fa-bolt"></i> Accesos Rápidos</h4>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x text-success mb-3"></i>
+                    <h5>Ver Menú Completo</h5>
+                    <a href="{% url 'core:menu' %}" class="btn btn-success">
+                        <i class="fas fa-arrow-right"></i> Ver
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-box fa-3x text-warning mb-3"></i>
+                    <h5>Gestionar Inventario</h5>
+                    <a href="/admin/core/item/" class="btn btn-warning" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Administrar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-list fa-3x text-primary mb-3"></i>
+                    <h5>Todos los Pedidos</h5>
+                    <a href="{% url 'core:pedidos' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-right"></i> Ver Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card hover-shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                    <h5>Estadísticas</h5>
+                    <a href="/admin/" class="btn btn-info text-white" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Ver Panel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

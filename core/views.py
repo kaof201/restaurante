@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum, Count
-from django.contrib.auth.decorators import login_required
 from functools import wraps
 from .models import (
     Item, Categoria, Mesa, Pedido, DetallePedido,
@@ -9,6 +8,7 @@ from .models import (
     TipoPedido, FormaPago, Pago, Rol
 )
 from decimal import Decimal
+from datetime import date
 
 # ============================================
 # DECORADORES PERSONALIZADOS
@@ -22,18 +22,15 @@ def rol_requerido(*roles_permitidos):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            # Verificar si hay usuario en sesión
             usuario_id = request.session.get('usuario_id')
             if not usuario_id:
                 messages.error(request, 'Debes iniciar sesión para acceder a esta página')
                 return redirect('core:login')
             
-            # Obtener usuario
             try:
                 usuario = Usuario.objects.get(id=usuario_id)
-                request.usuario = usuario  # Agregar usuario al request
+                request.usuario = usuario
                 
-                # Verificar rol
                 if usuario.rol.nombre not in roles_permitidos:
                     messages.error(request, 'No tienes permisos para acceder a esta página')
                     return redirect('core:dashboard')
@@ -73,7 +70,6 @@ def login_requerido(view_func):
 
 def login(request):
     """Vista de login"""
-    # Si ya está logueado, redirigir al dashboard
     if request.session.get('usuario_id'):
         return redirect('core:dashboard')
     
@@ -82,13 +78,11 @@ def login(request):
         password = request.POST.get('password')
         
         try:
-            # Buscar usuario por email y contraseña
             usuario = Usuario.objects.select_related('rol').get(
                 email=email,
-                password=password  # En producción usar hash
+                password=password
             )
             
-            # Guardar en sesión
             request.session['usuario_id'] = usuario.id
             request.session['usuario_nombre'] = usuario.nombre
             request.session['usuario_rol'] = usuario.rol.nombre
@@ -110,18 +104,26 @@ def logout(request):
     return redirect('core:login')
 
 
+def index(request):
+    """Página de inicio - redirige al login o dashboard"""
+    if request.session.get('usuario_id'):
+        return redirect('core:dashboard')
+    return redirect('core:login')
+
+
 @login_requerido
 def dashboard(request):
     """Dashboard principal que redirige según el rol"""
     rol = request.session.get('usuario_rol')
     
-    # Redirigir según el rol
     if rol == 'Administrador':
         return redirect('core:admin_dashboard')
     elif rol == 'Mesero':
         return redirect('core:mesero_dashboard')
     elif rol == 'Cajero':
         return redirect('core:cajero_dashboard')
+    elif rol == 'Chef':
+        return redirect('core:chef_dashboard')
     else:
         messages.error(request, 'Rol no reconocido. Contacte al administrador.')
         return redirect('core:login')
@@ -134,7 +136,6 @@ def dashboard(request):
 @rol_requerido('Administrador')
 def admin_dashboard(request):
     """Dashboard del Administrador - Acceso completo"""
-    # Estadísticas generales
     total_mesas = Mesa.objects.count()
     mesas_disponibles = Mesa.objects.filter(estado__nombre='Disponible').count()
     pedidos_activos = Pedido.objects.filter(
@@ -142,18 +143,14 @@ def admin_dashboard(request):
     ).count()
     items_disponibles = Item.objects.filter(estado__nombre='Activo').count()
     
-    # Pedidos recientes
     pedidos_recientes = Pedido.objects.all().select_related(
         'cliente', 'mesa', 'estado', 'usuario'
     ).order_by('-fecha')[:5]
     
-    # Estadísticas de ventas
     total_pedidos = Pedido.objects.count()
     total_clientes = Cliente.objects.count()
     total_empleados = Usuario.objects.count()
     
-    # Calcular ingresos del día
-    from datetime import date
     hoy = date.today()
     facturas_hoy = Factura.objects.filter(fecha__date=hoy)
     ingresos_hoy = sum(f.total for f in facturas_hoy)
@@ -169,7 +166,7 @@ def admin_dashboard(request):
         'total_empleados': total_empleados,
         'ingresos_hoy': ingresos_hoy,
     }
-    return render(request, 'core/dashboards/admin_dashboard.html', context)
+    return render(request, 'core/dashboard/admin_dashboard.html', context)
 
 
 # ============================================
@@ -179,17 +176,14 @@ def admin_dashboard(request):
 @rol_requerido('Mesero')
 def mesero_dashboard(request):
     """Dashboard del Mesero - Gestión de pedidos y mesas"""
-    # Mesas disponibles y ocupadas
     mesas_disponibles = Mesa.objects.filter(estado__nombre='Disponible')
     mesas_ocupadas = Mesa.objects.filter(estado__nombre='Ocupada')
     
-    # Pedidos activos del mesero
     mis_pedidos = Pedido.objects.filter(
         usuario_id=request.session.get('usuario_id'),
         estado__nombre__in=['Pendiente', 'En preparación']
-    ).select_related('cliente', 'mesa', 'estado')
+    ).select_related('cliente', 'mesa', 'estado').prefetch_related('detallepedido_set__item')
     
-    # Categorías e items para crear pedidos rápidos
     categorias = Categoria.objects.all()
     items_populares = Item.objects.filter(estado__nombre='Activo')[:8]
     
@@ -202,7 +196,7 @@ def mesero_dashboard(request):
         'total_mesas_disponibles': mesas_disponibles.count(),
         'total_mis_pedidos': mis_pedidos.count(),
     }
-    return render(request, 'core/dashboards/mesero_dashboard.html', context)
+    return render(request, 'core/dashboard/mesero_dashboard.html', context)
 
 
 # ============================================
@@ -212,26 +206,19 @@ def mesero_dashboard(request):
 @rol_requerido('Cajero')
 def cajero_dashboard(request):
     """Dashboard del Cajero - Facturación y cobros"""
-    # Pedidos pendientes de facturar
     pedidos_sin_factura = Pedido.objects.filter(
         factura__isnull=True,
         estado__nombre='Entregado'
-    ).select_related('cliente', 'mesa', 'usuario')
+    ).select_related('cliente', 'mesa', 'usuario').prefetch_related('detallepedido_set__item')
     
-    # Facturas del día
-    from datetime import date
     hoy = date.today()
     facturas_hoy = Factura.objects.filter(
         fecha__date=hoy
     ).select_related('cliente', 'usuario', 'pedido')
     
-    # Total recaudado hoy
     total_recaudado = sum(f.total for f in facturas_hoy)
-    
-    # Formas de pago
     formas_pago = FormaPago.objects.all()
     
-    # Pedidos listos para entregar
     pedidos_listos = Pedido.objects.filter(
         estado__nombre='En preparación'
     ).select_related('cliente', 'mesa')
@@ -244,7 +231,7 @@ def cajero_dashboard(request):
         'pedidos_listos': pedidos_listos,
         'total_facturas_hoy': facturas_hoy.count(),
     }
-    return render(request, 'core/dashboards/cajero_dashboard.html', context)
+    return render(request, 'core/dashboard/cajero_dashboard.html', context)
 
 
 # ============================================
@@ -254,18 +241,14 @@ def cajero_dashboard(request):
 @rol_requerido('Chef')
 def chef_dashboard(request):
     """Dashboard del Chef - Gestión de cocina"""
-    # Pedidos pendientes de preparar
     pedidos_pendientes = Pedido.objects.filter(
         estado__nombre='Pendiente'
     ).select_related('cliente', 'mesa', 'usuario').order_by('fecha')
     
-    # Pedidos en preparación
     pedidos_en_preparacion = Pedido.objects.filter(
         estado__nombre='En preparación'
     ).select_related('cliente', 'mesa', 'usuario')
     
-    # Items más pedidos del día
-    from datetime import date
     hoy = date.today()
     items_del_dia = DetallePedido.objects.filter(
         pedido__fecha__date=hoy
@@ -273,7 +256,6 @@ def chef_dashboard(request):
         cantidad_total=Sum('cantidad')
     ).order_by('-cantidad_total')[:5]
     
-    # Stock bajo
     items_stock_bajo = Item.objects.filter(
         estado__nombre='Activo',
         stock__lt=10
@@ -287,11 +269,11 @@ def chef_dashboard(request):
         'total_pendientes': pedidos_pendientes.count(),
         'total_en_preparacion': pedidos_en_preparacion.count(),
     }
-    return render(request, 'core/dashboards/chef_dashboard.html', context)
+    return render(request, 'core/dashboard/chef_dashboard.html', context)
 
 
 # ============================================
-# VISTAS COMPARTIDAS (con permisos)
+# VISTAS COMPARTIDAS
 # ============================================
 
 @login_requerido
@@ -339,7 +321,6 @@ def pedidos(request):
         'cliente', 'mesa', 'estado', 'usuario', 'tipo_pedido'
     ).prefetch_related('detallepedido_set__item').order_by('-fecha')
     
-    # Si es mesero, solo ver sus pedidos
     if rol == 'Mesero':
         pedidos_list = pedidos_list.filter(
             usuario_id=request.session.get('usuario_id')
@@ -376,11 +357,8 @@ def crear_pedido(request):
             
             estado = Estado.objects.get(nombre='Pendiente', tipo_estado__nombre='Pedido')
             tipo_pedido = TipoPedido.objects.get(id=tipo_pedido_id)
-            
-            # Usar el usuario logueado
             usuario = Usuario.objects.get(id=request.session.get('usuario_id'))
             
-            # Crear pedido
             pedido = Pedido.objects.create(
                 cliente=cliente,
                 mesa=mesa,
@@ -455,9 +433,94 @@ def generar_factura(request, pedido_id):
     return render(request, 'core/factura.html', context)
 
 
-# Página de inicio pública (redirige al login)
-def index(request):
-    """Página de inicio - redirige al login si no está autenticado"""
-    if request.session.get('usuario_id'):
-        return redirect('core:dashboard')
-    return redirect('core:login')
+# ============================================
+# CAMBIO DE ESTADO DE PEDIDOS
+# ============================================
+
+@rol_requerido('Chef')
+def cambiar_estado_pedido_chef(request, pedido_id):
+    """Chef puede cambiar estado: Pendiente -> En preparación -> Entregado"""
+    if request.method == 'POST':
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        nuevo_estado_nombre = request.POST.get('nuevo_estado')
+        
+        # Validar que el chef solo pueda cambiar a estados permitidos
+        estados_permitidos = ['En preparación', 'Entregado']
+        
+        if nuevo_estado_nombre in estados_permitidos:
+            try:
+                nuevo_estado = Estado.objects.get(
+                    nombre=nuevo_estado_nombre,
+                    tipo_estado__nombre='Pedido'
+                )
+                pedido.estado = nuevo_estado
+                pedido.save()
+                messages.success(request, f'Pedido #{pedido.id} marcado como {nuevo_estado_nombre}')
+            except Estado.DoesNotExist:
+                messages.error(request, 'Estado no válido')
+        else:
+            messages.error(request, 'No tienes permiso para cambiar a ese estado')
+    
+    return redirect('core:chef_dashboard')
+
+
+@rol_requerido('Mesero')
+def cambiar_estado_pedido_mesero(request, pedido_id):
+    """Mesero puede cambiar estado: Crear, Ver, Marcar como listo para entregar"""
+    if request.method == 'POST':
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        nuevo_estado_nombre = request.POST.get('nuevo_estado')
+        
+        # Validar que el mesero solo pueda cambiar a estados permitidos
+        estados_permitidos = ['Pendiente', 'Entregado']
+        
+        if nuevo_estado_nombre in estados_permitidos:
+            try:
+                nuevo_estado = Estado.objects.get(
+                    nombre=nuevo_estado_nombre,
+                    tipo_estado__nombre='Pedido'
+                )
+                pedido.estado = nuevo_estado
+                pedido.save()
+                
+                # Si se marca como entregado, liberar la mesa
+                if nuevo_estado_nombre == 'Entregado' and pedido.mesa:
+                    estado_disponible = Estado.objects.get(nombre='Disponible', tipo_estado__nombre='Mesa')
+                    pedido.mesa.estado = estado_disponible
+                    pedido.mesa.save()
+                
+                messages.success(request, f'Pedido #{pedido.id} marcado como {nuevo_estado_nombre}')
+            except Estado.DoesNotExist:
+                messages.error(request, 'Estado no válido')
+        else:
+            messages.error(request, 'No tienes permiso para cambiar a ese estado')
+    
+    return redirect('core:mesero_dashboard')
+
+
+@rol_requerido('Administrador')
+def cambiar_estado_pedido_admin(request, pedido_id):
+    """Admin puede cambiar a cualquier estado"""
+    if request.method == 'POST':
+        pedido = get_object_or_404(Pedido, id=pedido_id)
+        nuevo_estado_nombre = request.POST.get('nuevo_estado')
+        
+        try:
+            nuevo_estado = Estado.objects.get(
+                nombre=nuevo_estado_nombre,
+                tipo_estado__nombre='Pedido'
+            )
+            pedido.estado = nuevo_estado
+            pedido.save()
+            
+            # Si se marca como entregado, liberar la mesa
+            if nuevo_estado_nombre == 'Entregado' and pedido.mesa:
+                estado_disponible = Estado.objects.get(nombre='Disponible', tipo_estado__nombre='Mesa')
+                pedido.mesa.estado = estado_disponible
+                pedido.mesa.save()
+            
+            messages.success(request, f'Pedido #{pedido.id} actualizado a {nuevo_estado_nombre}')
+        except Estado.DoesNotExist:
+            messages.error(request, 'Estado no válido')
+    
+    return redirect('core:admin_dashboard')
