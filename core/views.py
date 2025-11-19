@@ -420,6 +420,7 @@ def generar_factura(request, pedido_id):
     descuento = Decimal('0.00')
     total = subtotal - descuento
     
+    # Verificar si ya existe factura
     try:
         factura = Factura.objects.get(pedido=pedido)
         print(f"Ya existe factura #{factura.id}")
@@ -427,6 +428,7 @@ def generar_factura(request, pedido_id):
         factura = None
         print("No existe factura, se puede crear una nueva")
     
+    # PROCESAR PAGO
     if request.method == 'POST' and not factura:
         print("PROCESANDO POST")
         try:
@@ -436,6 +438,7 @@ def generar_factura(request, pedido_id):
             print(f"Forma de pago ID: {forma_pago_id}")
             print(f"Descuento: {descuento_aplicado}")
             
+            # Validar forma de pago
             if not forma_pago_id:
                 print("ERROR: No se selecciono forma de pago")
                 messages.error(request, 'Debe seleccionar una forma de pago')
@@ -450,16 +453,18 @@ def generar_factura(request, pedido_id):
                 }
                 return render(request, 'core/factura.html', context)
             
+            # Calcular totales
             try:
                 descuento = Decimal(descuento_aplicado)
             except:
                 descuento = Decimal('0.00')
             
             total_final = subtotal - descuento
-            print(f"Total final: ${total_final}")
+            print(f"Subtotal: ${subtotal}, Descuento: ${descuento}, Total final: ${total_final}")
             
             usuario = Usuario.objects.get(id=request.session.get('usuario_id'))
             
+            # CREAR FACTURA
             factura = Factura.objects.create(
                 pedido=pedido,
                 cliente=pedido.cliente,
@@ -470,16 +475,17 @@ def generar_factura(request, pedido_id):
             )
             print(f"Factura creada: #{factura.id}")
             
+            # Copiar detalles
             for detalle in detalles:
                 DetalleFactura.objects.create(
                     factura=factura,
                     item=detalle.item,
                     cantidad=detalle.cantidad,
-                    precio_unitario=detalle.item.precio,
                     subtotal=detalle.subtotal
                 )
             print(f"Detalles copiados: {detalles.count()} items")
             
+            # Registrar pago
             forma_pago = FormaPago.objects.get(id=forma_pago_id)
             Pago.objects.create(
                 factura=factura,
@@ -488,14 +494,16 @@ def generar_factura(request, pedido_id):
             )
             print(f"Pago registrado: {forma_pago.nombre}")
             
+            # Cambiar estado del pedido a "Entregado"
             try:
-                estado_completado = Estado.objects.get(nombre='Completado', tipo_estado__nombre='Pedido')
-                pedido.estado = estado_completado
+                estado_entregado = Estado.objects.get(nombre='Entregado', tipo_estado__nombre='Pedido')
+                pedido.estado = estado_entregado
                 pedido.save()
-                print(f"Estado cambiado a: {estado_completado.nombre}")
+                print(f"Estado cambiado a: {estado_entregado.nombre}")
             except Estado.DoesNotExist:
-                print("ADVERTENCIA: No existe estado Completado")
+                print("ADVERTENCIA: No existe estado 'Entregado'")
             
+            # Liberar mesa
             if pedido.mesa:
                 print(f"Mesa asignada: #{pedido.mesa.id}")
                 try:
@@ -506,12 +514,13 @@ def generar_factura(request, pedido_id):
                     print(f"Mesa #{mesa_id} liberada")
                     messages.success(request, f'Mesa {mesa_id} liberada exitosamente')
                 except Estado.DoesNotExist:
-                    print("ERROR: No existe estado Disponible para mesas")
+                    print("ERROR: No existe estado 'Disponible' para mesas")
             else:
                 print("No hay mesa asignada")
             
-            messages.success(request, f'Pago procesado! Factura {factura.id} generada. Total: ${total_final}')
+            messages.success(request, f'Pago procesado! Factura #{factura.id} generada. Total: ${total_final}')
             
+            # Redirigir segun rol
             rol = request.session.get('usuario_rol')
             print(f"Rol: {rol}")
             
@@ -529,8 +538,9 @@ def generar_factura(request, pedido_id):
             print(f"ERROR: {str(e)}")
             import traceback
             traceback.print_exc()
-            messages.error(request, f'Error: {str(e)}')
+            messages.error(request, f'Error al procesar pago: {str(e)}')
     
+    # MOSTRAR FACTURA
     print("Renderizando template")
     context = {
         'pedido': pedido,

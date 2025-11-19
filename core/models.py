@@ -158,12 +158,12 @@ class Factura(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT)
     fecha = models.DateTimeField(auto_now_add=True)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # ✅ AGREGAR
     total = models.DecimalField(max_digits=10, decimal_places=2)
     descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return f"Factura #{self.id} - Total: {self.total}"
-
 
 # -----------------------------------------------------------
 # DETALLE DE FACTURA
