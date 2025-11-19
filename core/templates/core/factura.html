@@ -79,7 +79,9 @@
                             <strong>Mesa:</strong> #{{ pedido.mesa.id }} (Capacidad: {{ pedido.mesa.capacidad }})<br>
                         {% endif %}
                         <strong>Estado:</strong> 
-                        <span class="badge bg-warning">{{ pedido.estado.nombre }}</span><br>
+                        <span class="badge bg-{% if pedido.estado.nombre == 'Completado' %}success{% elif pedido.estado.nombre == 'Entregado' %}info{% else %}warning{% endif %}">
+                            {{ pedido.estado.nombre }}
+                        </span><br>
                         {% if pedido.usuario %}
                             <strong>Atendido por:</strong> {{ pedido.usuario.nombre }}
                         {% endif %}
@@ -125,48 +127,118 @@
                                 <span>Subtotal:</span>
                                 <strong>${{ subtotal }}</strong>
                             </div>
-                            {% if descuento > 0 %}
+                            {% if factura and factura.descuento > 0 %}
                             <div class="d-flex justify-content-between mb-2 text-success">
                                 <span>Descuento:</span>
-                                <strong>-${{ descuento }}</strong>
+                                <strong>-${{ factura.descuento }}</strong>
                             </div>
                             {% endif %}
                             <hr>
                             <div class="d-flex justify-content-between">
                                 <h5>TOTAL:</h5>
-                                <h4 class="text-primary"><strong>${{ total }}</strong></h4>
+                                <h4 class="text-primary">
+                                    <strong>
+                                        {% if factura %}
+                                            ${{ factura.total }}
+                                        {% else %}
+                                            ${{ total }}
+                                        {% endif %}
+                                    </strong>
+                                </h4>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Información de Pago -->
+            <!-- Información de Pago / Formulario -->
             {% if factura %}
             <div class="row mt-4">
                 <div class="col-12">
                     <div class="alert alert-success">
-                        <h6><i class="fas fa-check-circle"></i> Factura Generada</h6>
+                        <h6><i class="fas fa-check-circle"></i> Factura Generada y Pagada</h6>
                         <p class="mb-0">
-                            Factura ID: #{{ factura.id }} | 
-                            Total Facturado: ${{ factura.total }} | 
-                            Descuento Aplicado: ${{ factura.descuento }}
+                            <strong>Factura ID:</strong> #{{ factura.id }} | 
+                            <strong>Total Facturado:</strong> ${{ factura.total }} | 
+                            <strong>Descuento Aplicado:</strong> ${{ factura.descuento }}
                         </p>
                     </div>
                 </div>
             </div>
             {% else %}
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        <h6><i class="fas fa-info-circle"></i> Información</h6>
-                        <p class="mb-0">Esta es una vista previa. La factura aún no ha sido generada oficialmente.</p>
+                {% if pedido.estado.nombre == 'Entregado' %}
+                <!-- Formulario de Pago (solo si NO existe factura y está Entregado) -->
+                <div class="row mt-4 no-print">
+                    <div class="col-12">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-credit-card"></i> Procesar Pago
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="">
+                                    {% csrf_token %}
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">
+                                                <i class="fas fa-credit-card"></i> Forma de Pago *
+                                            </label>
+                                            <select name="forma_pago" class="form-select" required>
+                                                <option value="">Seleccione método de pago...</option>
+                                                {% for forma in formas_pago %}
+                                                <option value="{{ forma.id }}">{{ forma.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">
+                                                <i class="fas fa-percent"></i> Descuento (opcional)
+                                            </label>
+                                            <input type="number" 
+                                                   name="descuento" 
+                                                   class="form-control" 
+                                                   step="0.01" 
+                                                   min="0" 
+                                                   max="{{ subtotal }}"
+                                                   value="0"
+                                                   placeholder="0.00">
+                                            <small class="form-text text-muted">
+                                                Máximo: ${{ subtotal }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-info mb-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span><strong>Total a Pagar:</strong></span>
+                                            <h4 class="mb-0 text-primary">${{ total }}</h4>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-success btn-lg w-100">
+                                        <i class="fas fa-check-circle"></i> Confirmar Pago y Generar Factura
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+                {% else %}
+                <!-- Alerta si el pedido no está listo -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Pedido No Disponible para Facturar</h6>
+                            <p class="mb-0">
+                                El pedido debe estar en estado <strong>"Entregado"</strong> para poder generar la factura.
+                                <br>Estado actual: <strong>{{ pedido.estado.nombre }}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             {% endif %}
 
-            <!-- Métodos de Pago Disponibles -->
+            <!-- Métodos de Pago Disponibles (solo info) -->
             <div class="row mt-4">
                 <div class="col-12">
                     <h6 class="text-uppercase text-muted mb-3">
@@ -203,21 +275,29 @@
                 <div class="card-body">
                     <h6 class="mb-3">Acciones Adicionales:</h6>
                     <div class="d-flex gap-2 flex-wrap">
+                        {% if request.session.usuario_rol == 'Administrador' %}
                         <a href="/admin/core/pedido/{{ pedido.id }}/change/" 
                            class="btn btn-outline-primary" 
                            target="_blank">
                             <i class="fas fa-edit"></i> Editar Pedido
                         </a>
-                        {% if not factura %}
-                        <a href="/admin/core/factura/add/?pedido={{ pedido.id }}" 
-                           class="btn btn-outline-success" 
+                        {% endif %}
+                        
+                        {% if factura %}
+                        <a href="/admin/core/factura/{{ factura.id }}/change/" 
+                           class="btn btn-outline-info" 
                            target="_blank">
-                            <i class="fas fa-file-invoice-dollar"></i> Generar Factura Oficial
+                            <i class="fas fa-file-invoice"></i> Ver Factura en Admin
                         </a>
                         {% endif %}
+                        
                         <button onclick="window.print()" class="btn btn-outline-secondary">
-                            <i class="fas fa-download"></i> Descargar PDF
+                            <i class="fas fa-print"></i> Imprimir / Descargar PDF
                         </button>
+                        
+                        <a href="{% url 'core:pedidos' %}" class="btn btn-outline-dark">
+                            <i class="fas fa-list"></i> Ver Todos los Pedidos
+                        </a>
                     </div>
                 </div>
             </div>
@@ -245,6 +325,16 @@
         body {
             background: white !important;
         }
+    }
+    
+    .card.border-success {
+        border-width: 2px !important;
+    }
+    
+    .form-select:focus,
+    .form-control:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
     }
 </style>
 {% endblock %}

@@ -24,7 +24,7 @@ def rol_requerido(*roles_permitidos):
         def wrapper(request, *args, **kwargs):
             usuario_id = request.session.get('usuario_id')
             if not usuario_id:
-                messages.error(request, 'Debes iniciar sesión para acceder a esta página')
+                messages.error(request, 'Debes iniciar sesion para acceder a esta pagina')
                 return redirect('core:login')
             
             try:
@@ -32,12 +32,12 @@ def rol_requerido(*roles_permitidos):
                 request.usuario = usuario
                 
                 if usuario.rol.nombre not in roles_permitidos:
-                    messages.error(request, 'No tienes permisos para acceder a esta página')
-                    return redirect('core:dashboard')
+                    messages.error(request, 'No tienes permisos para acceder a esta pagina')
+                    return redirect('core:index')
                 
                 return view_func(request, *args, **kwargs)
             except Usuario.DoesNotExist:
-                messages.error(request, 'Usuario no válido')
+                messages.error(request, 'Usuario no valido')
                 return redirect('core:login')
         
         return wrapper
@@ -45,12 +45,12 @@ def rol_requerido(*roles_permitidos):
 
 
 def login_requerido(view_func):
-    """Decorador simple para verificar si el usuario está logueado"""
+    """Decorador simple para verificar si el usuario esta logueado"""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         usuario_id = request.session.get('usuario_id')
         if not usuario_id:
-            messages.error(request, 'Debes iniciar sesión')
+            messages.error(request, 'Debes iniciar sesion')
             return redirect('core:login')
         
         try:
@@ -58,14 +58,14 @@ def login_requerido(view_func):
             request.usuario = usuario
             return view_func(request, *args, **kwargs)
         except Usuario.DoesNotExist:
-            messages.error(request, 'Usuario no válido')
+            messages.error(request, 'Usuario no valido')
             return redirect('core:login')
     
     return wrapper
 
 
 # ============================================
-# VISTAS DE AUTENTICACIÓN
+# VISTAS DE AUTENTICACION
 # ============================================
 
 def login(request):
@@ -87,25 +87,25 @@ def login(request):
             request.session['usuario_nombre'] = usuario.nombre
             request.session['usuario_rol'] = usuario.rol.nombre
             
-            messages.success(request, f'¡Bienvenido {usuario.nombre}!')
+            messages.success(request, f'Bienvenido {usuario.nombre}!')
             return redirect('core:dashboard')
             
         except Usuario.DoesNotExist:
-            messages.error(request, 'Email o contraseña incorrectos')
+            messages.error(request, 'Email o contrasena incorrectos')
     
     return render(request, 'core/auth/login.html')
 
 
 @login_requerido
 def logout(request):
-    """Cerrar sesión"""
+    """Cerrar sesion"""
     request.session.flush()
-    messages.success(request, 'Sesión cerrada correctamente')
+    messages.success(request, 'Sesion cerrada correctamente')
     return redirect('core:login')
 
 
 def index(request):
-    """Página de inicio - redirige al login o dashboard"""
+    """Pagina de inicio - redirige al login o dashboard"""
     if request.session.get('usuario_id'):
         return redirect('core:dashboard')
     return redirect('core:login')
@@ -113,7 +113,7 @@ def index(request):
 
 @login_requerido
 def dashboard(request):
-    """Dashboard principal que redirige según el rol"""
+    """Dashboard principal que redirige segun el rol"""
     rol = request.session.get('usuario_rol')
     
     if rol == 'Administrador':
@@ -139,7 +139,7 @@ def admin_dashboard(request):
     total_mesas = Mesa.objects.count()
     mesas_disponibles = Mesa.objects.filter(estado__nombre='Disponible').count()
     pedidos_activos = Pedido.objects.filter(
-        estado__nombre__in=['Pendiente', 'En preparación']
+        estado__nombre__in=['Pendiente', 'En preparacion']
     ).count()
     items_disponibles = Item.objects.filter(estado__nombre='Activo').count()
     
@@ -175,13 +175,13 @@ def admin_dashboard(request):
 
 @rol_requerido('Mesero')
 def mesero_dashboard(request):
-    """Dashboard del Mesero - Gestión de pedidos y mesas"""
+    """Dashboard del Mesero - Gestion de pedidos y mesas"""
     mesas_disponibles = Mesa.objects.filter(estado__nombre='Disponible')
     mesas_ocupadas = Mesa.objects.filter(estado__nombre='Ocupada')
     
     mis_pedidos = Pedido.objects.filter(
         usuario_id=request.session.get('usuario_id'),
-        estado__nombre__in=['Pendiente', 'En preparación']
+        estado__nombre__in=['Pendiente', 'En preparacion']
     ).select_related('cliente', 'mesa', 'estado').prefetch_related('detallepedido_set__item')
     
     categorias = Categoria.objects.all()
@@ -205,7 +205,7 @@ def mesero_dashboard(request):
 
 @rol_requerido('Cajero')
 def cajero_dashboard(request):
-    """Dashboard del Cajero - Facturación y cobros"""
+    """Dashboard del Cajero - Facturacion y cobros"""
     pedidos_sin_factura = Pedido.objects.filter(
         factura__isnull=True,
         estado__nombre='Entregado'
@@ -217,10 +217,11 @@ def cajero_dashboard(request):
     ).select_related('cliente', 'usuario', 'pedido')
     
     total_recaudado = sum(f.total for f in facturas_hoy)
+    
     formas_pago = FormaPago.objects.all()
     
     pedidos_listos = Pedido.objects.filter(
-        estado__nombre='En preparación'
+        estado__nombre='En preparacion'
     ).select_related('cliente', 'mesa')
     
     context = {
@@ -240,14 +241,14 @@ def cajero_dashboard(request):
 
 @rol_requerido('Chef')
 def chef_dashboard(request):
-    """Dashboard del Chef - Gestión de cocina"""
+    """Dashboard del Chef - Gestion de cocina"""
     pedidos_pendientes = Pedido.objects.filter(
         estado__nombre='Pendiente'
-    ).select_related('cliente', 'mesa', 'usuario').order_by('fecha')
+    ).select_related('cliente', 'mesa', 'usuario').order_by('fecha').prefetch_related('detallepedido_set__item')
     
     pedidos_en_preparacion = Pedido.objects.filter(
-        estado__nombre='En preparación'
-    ).select_related('cliente', 'mesa', 'usuario')
+        estado__nombre='En preparacion'
+    ).select_related('cliente', 'mesa', 'usuario').prefetch_related('detallepedido_set__item')
     
     hoy = date.today()
     items_del_dia = DetallePedido.objects.filter(
@@ -278,7 +279,7 @@ def chef_dashboard(request):
 
 @login_requerido
 def menu(request):
-    """Mostrar el menú - Acceso para todos"""
+    """Mostrar el menu - Acceso para todos"""
     categorias = Categoria.objects.all()
     items = Item.objects.filter(estado__nombre='Activo').select_related(
         'categoria', 'tipo_item', 'estado'
@@ -298,7 +299,7 @@ def menu(request):
 
 @rol_requerido('Administrador', 'Mesero')
 def mesas(request):
-    """Gestión de mesas - Solo Admin y Mesero"""
+    """Gestion de mesas - Solo Admin y Mesero"""
     mesas_list = Mesa.objects.all().select_related('estado')
     disponibles = mesas_list.filter(estado__nombre='Disponible').count()
     ocupadas = mesas_list.filter(estado__nombre='Ocupada').count()
@@ -409,6 +410,9 @@ def crear_pedido(request):
 @rol_requerido('Administrador', 'Cajero', 'Mesero')
 def generar_factura(request, pedido_id):
     """Generar factura - Admin, Cajero y Mesero"""
+    print(f"INICIO generar_factura para pedido #{pedido_id}")
+    print(f"Metodo HTTP: {request.method}")
+    
     pedido = get_object_or_404(Pedido, id=pedido_id)
     detalles = DetallePedido.objects.filter(pedido=pedido).select_related('item')
     
@@ -418,9 +422,116 @@ def generar_factura(request, pedido_id):
     
     try:
         factura = Factura.objects.get(pedido=pedido)
+        print(f"Ya existe factura #{factura.id}")
     except Factura.DoesNotExist:
         factura = None
+        print("No existe factura, se puede crear una nueva")
     
+    if request.method == 'POST' and not factura:
+        print("PROCESANDO POST")
+        try:
+            forma_pago_id = request.POST.get('forma_pago')
+            descuento_aplicado = request.POST.get('descuento', '0')
+            
+            print(f"Forma de pago ID: {forma_pago_id}")
+            print(f"Descuento: {descuento_aplicado}")
+            
+            if not forma_pago_id:
+                print("ERROR: No se selecciono forma de pago")
+                messages.error(request, 'Debe seleccionar una forma de pago')
+                context = {
+                    'pedido': pedido,
+                    'detalles': detalles,
+                    'subtotal': subtotal,
+                    'descuento': descuento,
+                    'total': total,
+                    'factura': None,
+                    'formas_pago': FormaPago.objects.all(),
+                }
+                return render(request, 'core/factura.html', context)
+            
+            try:
+                descuento = Decimal(descuento_aplicado)
+            except:
+                descuento = Decimal('0.00')
+            
+            total_final = subtotal - descuento
+            print(f"Total final: ${total_final}")
+            
+            usuario = Usuario.objects.get(id=request.session.get('usuario_id'))
+            
+            factura = Factura.objects.create(
+                pedido=pedido,
+                cliente=pedido.cliente,
+                usuario=usuario,
+                subtotal=subtotal,
+                descuento=descuento,
+                total=total_final
+            )
+            print(f"Factura creada: #{factura.id}")
+            
+            for detalle in detalles:
+                DetalleFactura.objects.create(
+                    factura=factura,
+                    item=detalle.item,
+                    cantidad=detalle.cantidad,
+                    precio_unitario=detalle.item.precio,
+                    subtotal=detalle.subtotal
+                )
+            print(f"Detalles copiados: {detalles.count()} items")
+            
+            forma_pago = FormaPago.objects.get(id=forma_pago_id)
+            Pago.objects.create(
+                factura=factura,
+                forma_pago=forma_pago,
+                monto=total_final
+            )
+            print(f"Pago registrado: {forma_pago.nombre}")
+            
+            try:
+                estado_completado = Estado.objects.get(nombre='Completado', tipo_estado__nombre='Pedido')
+                pedido.estado = estado_completado
+                pedido.save()
+                print(f"Estado cambiado a: {estado_completado.nombre}")
+            except Estado.DoesNotExist:
+                print("ADVERTENCIA: No existe estado Completado")
+            
+            if pedido.mesa:
+                print(f"Mesa asignada: #{pedido.mesa.id}")
+                try:
+                    estado_disponible = Estado.objects.get(nombre='Disponible', tipo_estado__nombre='Mesa')
+                    mesa_id = pedido.mesa.id
+                    pedido.mesa.estado = estado_disponible
+                    pedido.mesa.save()
+                    print(f"Mesa #{mesa_id} liberada")
+                    messages.success(request, f'Mesa {mesa_id} liberada exitosamente')
+                except Estado.DoesNotExist:
+                    print("ERROR: No existe estado Disponible para mesas")
+            else:
+                print("No hay mesa asignada")
+            
+            messages.success(request, f'Pago procesado! Factura {factura.id} generada. Total: ${total_final}')
+            
+            rol = request.session.get('usuario_rol')
+            print(f"Rol: {rol}")
+            
+            if rol == 'Cajero':
+                print("Redirigiendo a cajero_dashboard")
+                return redirect('core:cajero_dashboard')
+            elif rol == 'Administrador':
+                print("Redirigiendo a admin_dashboard")
+                return redirect('core:admin_dashboard')
+            else:
+                print("Redirigiendo a mesero_dashboard")
+                return redirect('core:mesero_dashboard')
+            
+        except Exception as e:
+            print(f"ERROR: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'Error: {str(e)}')
+    
+    print("Renderizando template")
     context = {
         'pedido': pedido,
         'detalles': detalles,
@@ -439,13 +550,12 @@ def generar_factura(request, pedido_id):
 
 @rol_requerido('Chef')
 def cambiar_estado_pedido_chef(request, pedido_id):
-    """Chef puede cambiar estado: Pendiente -> En preparación -> Entregado"""
+    """Chef puede cambiar estado"""
     if request.method == 'POST':
         pedido = get_object_or_404(Pedido, id=pedido_id)
         nuevo_estado_nombre = request.POST.get('nuevo_estado')
         
-        # Validar que el chef solo pueda cambiar a estados permitidos
-        estados_permitidos = ['En preparación', 'Entregado']
+        estados_permitidos = ['En preparacion', 'Entregado']
         
         if nuevo_estado_nombre in estados_permitidos:
             try:
@@ -457,7 +567,7 @@ def cambiar_estado_pedido_chef(request, pedido_id):
                 pedido.save()
                 messages.success(request, f'Pedido #{pedido.id} marcado como {nuevo_estado_nombre}')
             except Estado.DoesNotExist:
-                messages.error(request, 'Estado no válido')
+                messages.error(request, 'Estado no valido')
         else:
             messages.error(request, 'No tienes permiso para cambiar a ese estado')
     
@@ -466,12 +576,11 @@ def cambiar_estado_pedido_chef(request, pedido_id):
 
 @rol_requerido('Mesero')
 def cambiar_estado_pedido_mesero(request, pedido_id):
-    """Mesero puede cambiar estado: Crear, Ver, Marcar como listo para entregar"""
+    """Mesero puede cambiar estado"""
     if request.method == 'POST':
         pedido = get_object_or_404(Pedido, id=pedido_id)
         nuevo_estado_nombre = request.POST.get('nuevo_estado')
         
-        # Validar que el mesero solo pueda cambiar a estados permitidos
         estados_permitidos = ['Pendiente', 'Entregado']
         
         if nuevo_estado_nombre in estados_permitidos:
@@ -483,7 +592,6 @@ def cambiar_estado_pedido_mesero(request, pedido_id):
                 pedido.estado = nuevo_estado
                 pedido.save()
                 
-                # Si se marca como entregado, liberar la mesa
                 if nuevo_estado_nombre == 'Entregado' and pedido.mesa:
                     estado_disponible = Estado.objects.get(nombre='Disponible', tipo_estado__nombre='Mesa')
                     pedido.mesa.estado = estado_disponible
@@ -491,7 +599,7 @@ def cambiar_estado_pedido_mesero(request, pedido_id):
                 
                 messages.success(request, f'Pedido #{pedido.id} marcado como {nuevo_estado_nombre}')
             except Estado.DoesNotExist:
-                messages.error(request, 'Estado no válido')
+                messages.error(request, 'Estado no valido')
         else:
             messages.error(request, 'No tienes permiso para cambiar a ese estado')
     
@@ -513,7 +621,6 @@ def cambiar_estado_pedido_admin(request, pedido_id):
             pedido.estado = nuevo_estado
             pedido.save()
             
-            # Si se marca como entregado, liberar la mesa
             if nuevo_estado_nombre == 'Entregado' and pedido.mesa:
                 estado_disponible = Estado.objects.get(nombre='Disponible', tipo_estado__nombre='Mesa')
                 pedido.mesa.estado = estado_disponible
@@ -521,6 +628,6 @@ def cambiar_estado_pedido_admin(request, pedido_id):
             
             messages.success(request, f'Pedido #{pedido.id} actualizado a {nuevo_estado_nombre}')
         except Estado.DoesNotExist:
-            messages.error(request, 'Estado no válido')
+            messages.error(request, 'Estado no valido')
     
     return redirect('core:admin_dashboard')

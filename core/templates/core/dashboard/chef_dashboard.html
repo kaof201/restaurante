@@ -129,7 +129,7 @@
                                     {% endfor %}
                                 </ul>
                                 <div class="mt-3">
-                                    <form method="post" action="{% url 'core:cambiar_estado_chef' pedido.id %}" style="display: inline;">
+                                    <form method="post" action="{% url 'core:cambiar_estado_pedido_chef' pedido.id %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="nuevo_estado" value="En preparación">
                                         <button type="submit" class="btn btn-warning btn-sm w-100">
@@ -195,11 +195,13 @@
                                     {% endfor %}
                                 </ul>
                                 <div class="mt-3">
-                                    <a href="/admin/core/pedido/{{ pedido.id }}/change/" 
-                                       class="btn btn-success btn-sm w-100"
-                                       target="_blank">
-                                        <i class="fas fa-check"></i> Marcar Como Listo
-                                    </a>
+                                    <form method="post" action="{% url 'core:cambiar_estado_pedido_chef' pedido.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="nuevo_estado" value="Entregado">
+                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                            <i class="fas fa-check"></i> Marcar Como Listo
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
