@@ -212,7 +212,7 @@ def admin_dashboard(request):
     total_mesas = Mesa.objects.count()
     mesas_disponibles = Mesa.objects.filter(estado__nombre='Disponible').count()
     pedidos_activos = Pedido.objects.filter(
-        estado__nombre__in=['Pendiente', 'En preparacion']
+        estado__nombre__in=['Pendiente', 'En preparación']
     ).count()
     items_disponibles = Item.objects.filter(estado__nombre='Activo').count()
     
@@ -252,7 +252,7 @@ def mesero_dashboard(request):
     
     mis_pedidos = Pedido.objects.filter(
         usuario_id=request.session.get('usuario_id'),
-        estado__nombre__in=['Pendiente', 'En preparacion']
+        estado__nombre__in=['Pendiente', 'En preparación']
     ).select_related('cliente', 'mesa', 'estado').prefetch_related('detallepedido_set__item')
     
     categorias = Categoria.objects.all()
@@ -292,7 +292,7 @@ def cajero_dashboard(request):
     formas_pago = FormaPago.objects.all()
     
     pedidos_listos = Pedido.objects.filter(
-        estado__nombre='En preparacion'
+        estado__nombre='En preparación'
     ).select_related('cliente', 'mesa')
     
     context = {
@@ -318,7 +318,7 @@ def chef_dashboard(request):
     ).select_related('cliente', 'mesa', 'usuario').order_by('fecha').prefetch_related('detallepedido_set__item')
     
     pedidos_en_preparacion = Pedido.objects.filter(
-        estado__nombre='En preparacion'
+        estado__nombre='En preparación'
     ).select_related('cliente', 'mesa', 'usuario').prefetch_related('detallepedido_set__item')
     
     hoy = date.today()
@@ -635,9 +635,9 @@ def cambiar_estado_pedido_chef(request, pedido_id):
     if request.method == 'POST':
         pedido = get_object_or_404(Pedido, id=pedido_id)
         nuevo_estado_nombre = request.POST.get('nuevo_estado')
-        
-        estados_permitidos = ['En preparacion', 'Entregado']
-        
+
+        estados_permitidos = ['En preparación', 'Entregado']
+
         if nuevo_estado_nombre in estados_permitidos:
             try:
                 nuevo_estado = Estado.objects.get(
@@ -646,12 +646,13 @@ def cambiar_estado_pedido_chef(request, pedido_id):
                 )
                 pedido.estado = nuevo_estado
                 pedido.save()
-                messages.success(request, f'Pedido #{pedido.id} marcado como {nuevo_estado_nombre}')
+                # NO mostrar mensaje para evitar alertas innecesarias
+                print(f"Chef cambió estado del pedido #{pedido.id} a {nuevo_estado_nombre}")
             except Estado.DoesNotExist:
-                messages.error(request, 'Estado no valido')
+                messages.error(request, f'Error: Estado "{nuevo_estado_nombre}" no existe en la base de datos')
         else:
-            messages.error(request, 'No tienes permiso para cambiar a ese estado')
-    
+            messages.error(request, f'No tienes permiso para cambiar a ese estado')
+
     return redirect('core:chef_dashboard')
 
 
