@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum, Count
+from django.utils import timezone
 from functools import wraps
 from .models import (
     Item, Categoria, Mesa, Pedido, DetallePedido,
@@ -11,7 +12,7 @@ from decimal import Decimal
 from datetime import date
 
 # ============================================
-# DECORADORES PERSONALIZADOS
+# DECORADORES PERSONALIZADOS - MEJORADOS
 # ============================================
 
 def rol_requerido(*roles_permitidos):
@@ -22,22 +23,39 @@ def rol_requerido(*roles_permitidos):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
+            # Verificar si existe sesión
             usuario_id = request.session.get('usuario_id')
+            
             if not usuario_id:
-                messages.error(request, 'Debes iniciar sesion para acceder a esta pagina')
+                messages.warning(request, 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.')
                 return redirect('core:login')
             
             try:
-                usuario = Usuario.objects.get(id=usuario_id)
+                usuario = Usuario.objects.select_related('rol').get(id=usuario_id)
+                
+                # Verificar que el rol coincide con el guardado en sesión
+                rol_sesion = request.session.get('usuario_rol')
+                if usuario.rol.nombre != rol_sesion:
+                    messages.error(request, 'Sesión inválida. Por favor, inicia sesión nuevamente.')
+                    request.session.flush()
+                    return redirect('core:login')
+                
+                # Verificar permisos
+                if usuario.rol.nombre not in roles_permitidos:
+                    messages.error(request, f'Acceso denegado. Esta página es solo para: {", ".join(roles_permitidos)}')
+                    return redirect('core:dashboard')
+                
+                # Actualizar última actividad
+                request.session['ultima_actividad'] = timezone.now().isoformat()
+                
+                # Adjuntar usuario al request
                 request.usuario = usuario
                 
-                if usuario.rol.nombre not in roles_permitidos:
-                    messages.error(request, 'No tienes permisos para acceder a esta pagina')
-                    return redirect('core:index')
-                
                 return view_func(request, *args, **kwargs)
+                
             except Usuario.DoesNotExist:
-                messages.error(request, 'Usuario no valido')
+                messages.error(request, 'Usuario no válido. Por favor, inicia sesión nuevamente.')
+                request.session.flush()
                 return redirect('core:login')
         
         return wrapper
@@ -45,76 +63,130 @@ def rol_requerido(*roles_permitidos):
 
 
 def login_requerido(view_func):
-    """Decorador simple para verificar si el usuario esta logueado"""
+    """Decorador simple para verificar si el usuario está logueado"""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         usuario_id = request.session.get('usuario_id')
+        
         if not usuario_id:
-            messages.error(request, 'Debes iniciar sesion')
+            messages.warning(request, 'Debes iniciar sesión para acceder a esta página')
             return redirect('core:login')
         
         try:
-            usuario = Usuario.objects.get(id=usuario_id)
+            usuario = Usuario.objects.select_related('rol').get(id=usuario_id)
             request.usuario = usuario
+            
+            # Actualizar última actividad
+            request.session['ultima_actividad'] = timezone.now().isoformat()
+            
             return view_func(request, *args, **kwargs)
+            
         except Usuario.DoesNotExist:
-            messages.error(request, 'Usuario no valido')
+            messages.error(request, 'Usuario no válido')
+            request.session.flush()
             return redirect('core:login')
     
     return wrapper
 
 
 # ============================================
-# VISTAS DE AUTENTICACION
+# VISTAS DE AUTENTICACIÓN - MEJORADAS
 # ============================================
 
 def login(request):
-    """Vista de login"""
+    """Vista de login mejorada con validación de sesión"""
+    
+    # Si ya está logueado, redirigir al dashboard
     if request.session.get('usuario_id'):
-        return redirect('core:dashboard')
+        usuario_id = request.session.get('usuario_id')
+        
+        # Verificar que el usuario aún existe
+        try:
+            usuario = Usuario.objects.get(id=usuario_id)
+            return redirect('core:dashboard')
+        except Usuario.DoesNotExist:
+            # Usuario no existe, limpiar sesión
+            request.session.flush()
     
     if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '').strip()
+        
+        # Validaciones
+        if not email or not password:
+            messages.error(request, 'Por favor, completa todos los campos')
+            return render(request, 'core/auth/login.html')
         
         try:
+            # Buscar usuario
             usuario = Usuario.objects.select_related('rol').get(
                 email=email,
                 password=password
             )
             
+            # Limpiar cualquier sesión anterior
+            request.session.flush()
+            
+            # Crear nueva sesión
             request.session['usuario_id'] = usuario.id
             request.session['usuario_nombre'] = usuario.nombre
             request.session['usuario_rol'] = usuario.rol.nombre
+            request.session['login_time'] = timezone.now().isoformat()
+            request.session['ultima_actividad'] = timezone.now().isoformat()
             
-            messages.success(request, f'Bienvenido {usuario.nombre}!')
+            # Configurar tiempo de expiración
+            request.session.set_expiry(28800)  # 8 horas
+            
+            messages.success(request, f'¡Bienvenido {usuario.nombre}!')
+            
+            # Log de inicio de sesión
+            print(f"✓ Login exitoso: {usuario.email} ({usuario.rol.nombre}) - Sesión ID: {request.session.session_key}")
+            
             return redirect('core:dashboard')
             
         except Usuario.DoesNotExist:
-            messages.error(request, 'Email o contrasena incorrectos')
+            messages.error(request, 'Email o contraseña incorrectos')
+            print(f"✗ Intento de login fallido: {email}")
     
     return render(request, 'core/auth/login.html')
 
 
 @login_requerido
 def logout(request):
-    """Cerrar sesion"""
+    """Cerrar sesión mejorada"""
+    usuario_nombre = request.session.get('usuario_nombre', 'Usuario')
+    usuario_rol = request.session.get('usuario_rol', '')
+    
+    # Log de cierre de sesión
+    print(f"✓ Logout: {usuario_nombre} ({usuario_rol}) - Sesión ID: {request.session.session_key}")
+    
+    # Destruir completamente la sesión
     request.session.flush()
-    messages.success(request, 'Sesion cerrada correctamente')
+    
+    messages.success(request, f'Hasta pronto, {usuario_nombre}. Sesión cerrada correctamente.')
     return redirect('core:login')
 
 
 def index(request):
-    """Pagina de inicio - redirige al login o dashboard"""
+    """Página de inicio - redirige al login o dashboard"""
     if request.session.get('usuario_id'):
-        return redirect('core:dashboard')
+        # Verificar que la sesión sea válida
+        try:
+            usuario = Usuario.objects.get(id=request.session.get('usuario_id'))
+            return redirect('core:dashboard')
+        except Usuario.DoesNotExist:
+            request.session.flush()
+            return redirect('core:login')
+    
     return redirect('core:login')
 
 
 @login_requerido
 def dashboard(request):
-    """Dashboard principal que redirige segun el rol"""
+    """Dashboard principal que redirige según el rol"""
     rol = request.session.get('usuario_rol')
+    
+    print(f"→ Redirigiendo dashboard para rol: {rol}")
     
     if rol == 'Administrador':
         return redirect('core:admin_dashboard')
@@ -126,16 +198,17 @@ def dashboard(request):
         return redirect('core:chef_dashboard')
     else:
         messages.error(request, 'Rol no reconocido. Contacte al administrador.')
+        request.session.flush()
         return redirect('core:login')
 
 
 # ============================================
-# DASHBOARD ADMINISTRADOR
+# RESTO DE TUS VISTAS (sin cambios)
 # ============================================
 
 @rol_requerido('Administrador')
 def admin_dashboard(request):
-    """Dashboard del Administrador - Acceso completo"""
+    """Dashboard del Administrador"""
     total_mesas = Mesa.objects.count()
     mesas_disponibles = Mesa.objects.filter(estado__nombre='Disponible').count()
     pedidos_activos = Pedido.objects.filter(
@@ -167,8 +240,6 @@ def admin_dashboard(request):
         'ingresos_hoy': ingresos_hoy,
     }
     return render(request, 'core/dashboard/admin_dashboard.html', context)
-
-
 # ============================================
 # DASHBOARD MESERO
 # ============================================
